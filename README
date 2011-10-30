@@ -1,6 +1,6 @@
 Deps: lxml (python-lxml in debian)
 
-rssgen generates Atom feeds out of pages that do not have them.  It comes out of the box with code for Hacker News comments, Gelbooru tag searches, Bugzilla bugs and Twitter feeds.  Implementing code for a new site is easy.  rssgen doesn't keep any state - you've been warned.
+atom_maker generates Atom feeds out of pages that do not have them.  It comes out of the box with code for Hacker News comments, Gelbooru tag searches, Bugzilla bugs and Twitter feeds.  Implementing code for a new site is easy.  atom_maker doesn't keep any state - you've been warned.
 
 Setup
 -----
