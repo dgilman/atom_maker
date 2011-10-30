@@ -12,7 +12,8 @@ The top of generator.py explains the dict generators are expected to return.  Yo
 
 For tracking down new XPath queries I play around in the Python interpreter like so:
 
-```>>> from lxml import etree
+```
+>>> from lxml import etree
 >>> ts = etree.tostring
 >>> t = etree.parse('http://gilslotd.com', etree.HTMLParser())
 >>> t.xpath('//cadadr')
@@ -24,7 +25,8 @@ For tracking down new XPath queries I play around in the Python interpreter like
 >>> ts(_)
 '<cadadr>hello world</cadadr>'
 #Looks good!
-#Keep going until you get the list you want.```
+#Keep going until you get the list you want.
+```
 
 Why xpath?
 ----------
