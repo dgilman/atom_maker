@@ -1,0 +1,17 @@
+#prefs is a dict of feeds.  the key is the name of the feed.  the value is a dict with keys "generator" (name of the function you want to handle this request) and "args" (whatever you want passed to that function).
+
+prefs = {
+   "bmo_666666": {
+      "generator": "bmo",
+      "args": "666666"
+   },
+   "gelbooru_puppy": {
+      "generator": "gelbooru",
+      "args": "puppy"
+   },
+   "hn_pg_comments": {
+      "generator": "hackernews_comments",
+      "args": "pg"
+   },
+   "version": 1
+}
