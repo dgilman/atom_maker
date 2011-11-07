@@ -42,7 +42,7 @@ def create_atom(feed):
    if "subtitle" in feed:
       xml.append(u'<subtitle>%s</subtitle>' % feed["subtitle"])
    if "link" in feed:
-      xml.append(u'<link>%s</link>' % feed["link"])
+      xml.append(u'<link href="%s" />' % feed["link"])
 
    #validate individual entries.
 
@@ -74,7 +74,7 @@ def create_atom(feed):
       if "published" in entry:
          xml.append(u'<published>%s</published>' % entry["published"])
       if "link" in entry:
-         xml.append(u'<link>%s</link>' % entry["link"])
+         xml.append(u'<link href="%s" />' % entry["link"])
 
       xml.append(u'</entry>')
    xml.append(u'</feed>')

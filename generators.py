@@ -33,27 +33,36 @@
 def bmo(arg):
    from lxml import etree
    import urllib #bugzilla.mozilla.org forces https which libxml2 balks at
+   from textwrap import fill
    url = 'https://bugzilla.mozilla.org/show_bug.cgi?id=%s' % arg
    rval = {"id": url,
            "link": url,
            "entries": []}
 
-   tree = etree.parse(urllib.urlopen(url), etree.HTMLParser())
+   tree = etree.parse(urllib.urlopen(url), etree.HTMLParser(encoding="UTF-8"))
    comments = tree.xpath("//div[@class='bz_comment']")
    rval["title"] = tree.xpath('/html/head/title')[0].text
+
+   for e in tree.xpath('//pre[@class="bz_comment_text"]'):
+      e.attrib["style"] = "white-space:pre-wrap"
 
    for comment in comments:
       time = comment.xpath("div/span[@class='bz_comment_time']")[0].text.strip("\n ")
       timebits = time.split()
       pseudo = timebits[0]+ "T" + timebits[1] + "-07:00" #pseudo rfc3339
-      fn = comment.xpath("div/span/span/span[@class='fn']")[0].text
+      fn = comment.xpath("div/span/span/span[@class='fn']")
+      if len(fn) == 1:
+         name = fn[0].text
+      else: #user didn't give a full name to bugzilla
+         name = comment.xpath("div/span/span")[0].text[:-1] #random newline
       entry = {"id": comment.attrib["id"],
-               "title": u"Comment %s - %s - %s" % (comment.attrib["id"][-1:], fn, time),
+               "title": u"Comment %s - %s - %s" % (comment.attrib["id"][1:], name, time),
                "content": etree.tostring(comment.xpath("pre[@class='bz_comment_text']")[0]),
                "content_type": "html",
-               "author": fn,
+               "author": name,
                "updated": pseudo,
-               "published": pseudo}
+               "published": pseudo,
+               "link": "https://bugzilla.mozilla.org/%s" % comment.xpath("div/span/a")[0].attrib["href"]}
       rval["entries"].append(entry)
       rval["updated"] = pseudo #the last updated time of the global feed is the post time of the last comment... for now
    return rval
@@ -74,13 +83,13 @@ def gelbooru(arg):
       entry = {"id": post.attrib["id"],
                "title": post.xpath('a/img')[0].attrib["alt"],
                "content": etree.tostring(post.xpath('a')[0]),
-               "content_type": "html"}
+               "content_type": "html",
+               "link": "http://gelbooru.com/%s" % post.xpath('a')[0].attrib["href"]}
       rval["entries"].append(entry)
    return rval
 
 def hackernews_comments(arg):
-   """Create an rss feed out of the comments from a Hacker News user.
-   arg is a string (the username)"""
+   """arg is a string (the username)"""
    rval = {"id": 'http://news.ycombinator.com/threads?id=%s' % arg,
            "title": "%s's comments - Hacker News" % arg,
            "author": arg,
