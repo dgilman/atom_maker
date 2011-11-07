@@ -30,11 +30,17 @@
 #(optional) updated: date (rfc3339) of last update.  if not given uses now
 #(optional) link: entry link
 
+def redhat_sources_bz(arg):
+   return _bz4(arg, 'sources.redhat.com/bugzilla')
+
 def bmo(arg):
+   return _bz4(arg, 'bugzilla.mozilla.org')
+
+def _bz4(arg, url):
+   #TODO: not assume everyone's in PST
    from lxml import etree
    import urllib #bugzilla.mozilla.org forces https which libxml2 balks at
-   from textwrap import fill
-   url = 'https://bugzilla.mozilla.org/show_bug.cgi?id=%s' % arg
+   url = 'http://%s/show_bug.cgi?id=%s' % (url, arg)
    rval = {"id": url,
            "link": url,
            "entries": []}
@@ -62,12 +68,13 @@ def bmo(arg):
                "author": name,
                "updated": pseudo,
                "published": pseudo,
-               "link": "https://bugzilla.mozilla.org/%s" % comment.xpath("div/span/a")[0].attrib["href"]}
+               "link": "https://%s/%s" % (url, comment.xpath("div/span/a")[0].attrib["href"])}
       rval["entries"].append(entry)
       rval["updated"] = pseudo #the last updated time of the global feed is the post time of the last comment... for now
    return rval
 
 def gelbooru(arg):
+   """Gets the latest posts for a given tag query.  Arg is the query, no need to urlencode spaces"""
    from lxml import etree
    url = 'http://gelbooru.com/index.php?page=post&s=list&tags=%s' % arg
    rval = {"id": url,
@@ -76,7 +83,7 @@ def gelbooru(arg):
            "link": url,
            "entries": []}
 
-   tree = etree.parse(url, etree.HTMLParser())
+   tree = etree.parse(url, etree.HTMLParser(encoding="UTF-8"))
    posts = tree.xpath('//div[@class="content"]/div[2]/span')
 
    for post in posts:
@@ -89,7 +96,7 @@ def gelbooru(arg):
    return rval
 
 def hackernews_comments(arg):
-   """arg is a string (the username)"""
+   """Gets the comments of a hacker news user.  arg is a string (the username)"""
    rval = {"id": 'http://news.ycombinator.com/threads?id=%s' % arg,
            "title": "%s's comments - Hacker News" % arg,
            "author": arg,
@@ -120,5 +127,6 @@ def hackernews_comments(arg):
 generators = {
    "hackernews_comments": hackernews_comments,
    "gelbooru": gelbooru,
-   "bmo": bmo
+   "bmo": bmo,
+   "redhat_sources_bz": redhat_sources_bz
 }
