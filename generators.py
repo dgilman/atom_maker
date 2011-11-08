@@ -31,16 +31,16 @@
 #(optional) link: entry link
 
 def redhat_sources_bz(arg):
-   return _bz4(arg, 'sources.redhat.com/bugzilla')
+   return _bz4(arg, 'http://sources.redhat.com/bugzilla')
 
 def bmo(arg):
-   return _bz4(arg, 'bugzilla.mozilla.org')
+   return _bz4(arg, 'https://bugzilla.mozilla.org')
 
 def _bz4(arg, url):
    #TODO: not assume everyone's in PST
    from lxml import etree
    import urllib #bugzilla.mozilla.org forces https which libxml2 balks at
-   url = 'http://%s/show_bug.cgi?id=%s' % (url, arg)
+   url = '%s/show_bug.cgi?id=%s' % (url, arg)
    rval = {"id": url,
            "link": url,
            "entries": []}
@@ -68,7 +68,7 @@ def _bz4(arg, url):
                "author": name,
                "updated": pseudo,
                "published": pseudo,
-               "link": "https://%s/%s" % (url, comment.xpath("div/span/a")[0].attrib["href"])}
+               "link": "%s/%s" % (url, comment.xpath("div/span/a")[0].attrib["href"])}
       rval["entries"].append(entry)
       rval["updated"] = pseudo #the last updated time of the global feed is the post time of the last comment... for now
    return rval
