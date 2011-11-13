@@ -46,6 +46,23 @@
 #(optional) updated: date (rfc3339) of last update.  if not given uses now
 #(optional) link: entry link
 
+def twitter_noreply(arg):
+   """Strips out @replies from a user's twitter feed.
+   arg is a tuple of strings (username, uid).
+   username is case-sensitive
+   uid has to be looked up from the user's rss feed (afaict)"""
+   from lxml import etree
+   import sys
+   username, uid = arg
+
+   t = etree.parse('http://twitter.com/statuses/user_timeline/%s.rss' % uid)
+   reply = [e.getparent() for e in t.xpath('//item/title') if e.text.startswith('%s: @' % username)]
+   for e in reply:
+      e.getparent().remove(e)
+
+   print etree.tostring(t).encode('UTF-8')
+   sys.exit()
+
 def redhat_sources_bz(arg):
    return _bz4(arg, 'http://sources.redhat.com/bugzilla')
 
@@ -144,5 +161,6 @@ generators = {
    "hackernews_comments": hackernews_comments,
    "gelbooru": gelbooru,
    "bmo": bmo,
-   "redhat_sources_bz": redhat_sources_bz
+   "redhat_sources_bz": redhat_sources_bz,
+   "twitter_noreply": twitter_noreply
 }
