@@ -16,6 +16,10 @@
 #
 # You should have received a copy of the GNU General Public License 19 # along with atom_maker.  If not, see <http://www.gnu.org/licenses/>.
 
+from util import create_error_feed as err
+badparse = "The page couldn't be parsed properly.  It's likely that the page's markup has changed and your atom_maker needs to be updated."
+badfetch = "The page couldn't be fetched.  The website might be down."
+
 #when adding a generator don't forget to add it to the dict at the end of the file!
 
 #generator spec:
@@ -55,8 +59,13 @@ def twitter_noreply(arg):
    import sys
    username, uid = arg
 
-   t = etree.parse('http://twitter.com/statuses/user_timeline/%s.rss' % uid)
-   reply = [e.getparent() for e in t.xpath('//item/title') if e.text.startswith('%s: @' % username)]
+   try:
+      t = etree.parse('http://twitter.com/statuses/user_timeline/%s.rss' % uid)
+   except:
+      err(badfetch)
+   titles = t.xpath('//item/title')
+   if len(titles) == 0: err(badparse)
+   reply = [e.getparent() for e in titles if e.text.startswith('%s: @' % username)]
    for e in reply:
       e.getparent().remove(e)
 
@@ -64,7 +73,7 @@ def twitter_noreply(arg):
    sys.exit()
 
 def redhat_sources_bz(arg):
-   return _bz4(arg, 'http://sources.redhat.com/bugzilla')
+   return _bz4(arg, 'http://sourceware.org/bugzilla')
 
 def bmo(arg):
    return _bz4(arg, 'https://bugzilla.mozilla.org')
@@ -77,9 +86,12 @@ def _bz4(arg, url):
    rval = {"id": url,
            "link": url,
            "entries": []}
-
-   tree = etree.parse(urllib.urlopen(url), etree.HTMLParser(encoding="UTF-8"))
+   try:
+      tree = etree.parse(urllib.urlopen(url), etree.HTMLParser(encoding="UTF-8"))
+   except:
+      err(badfetch)
    comments = tree.xpath("//div[@class='bz_comment']")
+   if len(comments) == 0: err(badparse)
    rval["title"] = tree.xpath('/html/head/title')[0].text
 
    for e in tree.xpath('//pre[@class="bz_comment_text"]'):
@@ -116,10 +128,15 @@ def gelbooru(arg):
            "link": url,
            "entries": []}
 
-   tree = etree.parse(url, etree.HTMLParser(encoding="UTF-8"))
+   try:
+      tree = etree.parse(url, etree.HTMLParser(encoding="UTF-8"))
+   except:
+      err(badfetch)
    posts = tree.xpath('//div[@class="content"]/div[2]/span')
+   if len(posts) == 0: err(badparse)
 
    for post in posts:
+      post.xpath('a')[0].attrib['href'] = 'http://gelbooru.com/' + post.xpath('a')[0].attrib['href']
       entry = {"id": post.attrib["id"],
                "title": post.xpath('a/img')[0].attrib["alt"],
                "content": etree.tostring(post.xpath('a')[0]),
@@ -141,11 +158,16 @@ def hackernews_comments(arg):
    link = lambda e: 'http://news.ycombinator.com/' + e.xpath('div/span[@class="comhead"]/a[2]')[0].attrib['href']
    post = lambda e: etree.tostring(list(e.xpath('span[1]')[0])[0], encoding='UTF-8') #get rid of <span class="comment">
 
-   tree = etree.parse('http://news.ycombinator.com/threads?id=%s' % arg, etree.HTMLParser(encoding="UTF-8"))
+   try:
+      tree = etree.parse('http://news.ycombinator.com/threads?id=%s' % arg, etree.HTMLParser(encoding="UTF-8"))
+   except:
+      err(badfetch)
    user_comments = tree.xpath('/html/body/center/table/tr/td/table/tr/td[div/span/a = "%s"]' % arg)
+   if len(user_comments) == 0: err(badparse)
 
    links = [link(e) for e in user_comments]
    posts = [post(e) for e in user_comments]
+   if len(links) != len(user_comments) or len(posts) != len(user_comments): err(badparse)
 
    for comment in zip(links, posts):
       entry = {"id": comment[0],
