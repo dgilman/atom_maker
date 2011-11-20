@@ -23,9 +23,7 @@ import sys, os
 VERSION = 1
 
 from util import create_error_feed as err
-
-def rfc3339(d): # https://bitbucket.org/henry/rfc3339/src/tip/rfc3339.py
-   return ('%04d-%02d-%02dT%02d:%02d:%02dZ' % (d.year, d.month, d.day, d.hour, d.minute, d.second))
+from util import rfc3339
 
 def create_atom(feed):
    """Validates the generator output and creates the ATOM feed"""
