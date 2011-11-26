@@ -134,6 +134,10 @@ def page():
    print create_atom(get_feed(args["feed"][0])).encode('UTF-8')
 
 if 'REQUEST_METHOD' in os.environ and os.environ['REQUEST_METHOD'] == 'GET':
-   page()
+   try:
+      page()
+   except Exception:
+      import traceback
+      err("An exception has occured.  The generator may no longer be compatible with your webpage.\n%s" % traceback.format_exc())
 else: # fuck it, we're cli
    cli()
