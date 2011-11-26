@@ -36,7 +36,7 @@ badfetch = "The page couldn't be fetched.  The website might be down."
 #(optional) updated: date (rfc3339) of last update.  if not given uses now
 #(optional) subtitle: description
 #(optional) link: page link
-#entry: list of dicts of entries (described below)
+#entries: list of dicts of entries (described below)
 
 #entries:
 #
@@ -49,6 +49,39 @@ badfetch = "The page couldn't be fetched.  The website might be down."
 #(optional) published: rfc3339 string of publishing date
 #(optional) updated: date (rfc3339) of last update.  if not given uses now
 #(optional) link: entry link
+
+def blogspot(arg):
+   """Some users don't have RSS feeds turned on.  why_would_you_do_that.jpg"""
+   from lxml import etree
+
+   url = 'http://%s.blogspot.com' % arg
+   try:
+      t = etree.parse(url, etree.HTMLParser(encoding="UTF-8"))
+   except:
+      err(badfetch)
+
+   posts = t.xpath('//div[@class="post-outer"]')
+   if len(posts) == 0: err(badparse)
+
+   rval = {"id": url,
+           "link": url,
+           "title": t.xpath('//title')[0].text,
+           "entries": []}
+
+   for post in posts:
+      ts = post.xpath('descendant::abbr[@class="published"]')[0].attrib["title"]
+      link = post.xpath('descendant::a[@title="permanent link"]')[0].attrib["href"]
+      entry = {"id": link,
+               "title": post.xpath('descendant::div[@class="title"]/h2/a')[0].text,
+               "content": etree.tostring(post.xpath('descendant::div[@class="postcover"]')[0]),
+               "content_type": "html",
+               "author": post.xpath('descendant::span[@class="fn"]')[0].text,
+               "published": ts,
+               "updated": ts,
+               "link": link}
+      rval["entries"].append(entry)
+   rval["updated"] = rval["entries"][0]["updated"] #assume the first entry is the newest
+   return rval
 
 def twitter_noreply(arg):
    """Strips out @replies from a user's twitter feed.
@@ -184,5 +217,6 @@ generators = {
    "gelbooru": gelbooru,
    "bmo": bmo,
    "redhat_sources_bz": redhat_sources_bz,
-   "twitter_noreply": twitter_noreply
+   "twitter_noreply": twitter_noreply,
+   "blogspot": blogspot
 }
