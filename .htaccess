@@ -1,0 +1,7 @@
+Order Allow,Deny
+Deny from all
+
+<Files am.py>
+   Order Allow,Deny
+   Allow from all
+</Files>
