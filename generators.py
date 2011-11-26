@@ -113,7 +113,7 @@ def _bz4(arg, url):
                "author": name,
                "updated": pseudo,
                "published": pseudo,
-               "link": "%s/%s" % (url, comment.xpath("div/span/a")[0].attrib["href"])}
+               "link": "%s#%s" % (url, comment.attrib["id"])}
       rval["entries"].append(entry)
       rval["updated"] = pseudo #the last updated time of the global feed is the post time of the last comment... for now
    return rval
