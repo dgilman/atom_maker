@@ -53,6 +53,7 @@ def create_atom(feed):
       xml.append(u'<subtitle>%s</subtitle>' % feed["subtitle"])
    if "link" in feed:
       xml.append(u'<link href="%s" />' % feed["link"])
+   xml.append(u'<generator uri="https://github.com/dgilman/atom_maker" version="%s">atom_maker</generator>' % str(VERSION))
 
    #validate individual entries.
 
