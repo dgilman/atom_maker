@@ -6,7 +6,7 @@ def create_error_feed(error_msg):
    error_id = "https://github.com/dgilman/atom_maker"
    import datetime
    now = rfc3339(datetime.datetime.now())
-   print u'<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Internal feed error</title><id>%s</id><updated>%s</updated><author><name>rssgen</name></author><entry><title>%s</title><id>%s</id><updated>%s</updated><content type="text">%s</content></entry></feed>' % (error_id, now, error_msg.partition('\n')[0], error_id, now, error_msg)
+   print u'<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Internal feed error</title><id>%s</id><updated>%s</updated><author><name>atom_maker</name></author><entry><title>%s</title><id>%s</id><updated>%s</updated><content type="text">%s</content></entry></feed>' % (error_id, now, error_msg.partition('\n')[0], error_id, now, error_msg)
    import sys
    sys.exit()
 
