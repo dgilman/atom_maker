@@ -1,17 +1,17 @@
-#prefs is a dict of feeds.  the key is the name of the feed.  the value is a dict with keys "generator" (name of the function you want to handle this request) and "args" (whatever you want passed to that function).
+# prefs is a dict of generator functions
+# the part of the request before the underscore (bmo in the case of bmo_123456) will be the key
+# if you need to modify the args as they come in you can write a decorator here
+
+import generators
 
 prefs = {
-   "bmo_666666": {
-      "generator": "bmo",
-      "args": "666666"
-   },
-   "gelbooru_puppy": {
-      "generator": "gelbooru",
-      "args": "puppy"
-   },
-   "hn_pg_comments": {
-      "generator": "hackernews_comments",
-      "args": "pg"
-   },
-   "version": 1
+   "bmo": generators.bmo,
+   "gel": generators.gelbooru,
+   "rh": generators.redhat_sources_bz,
+   "twitter": generators.twitter_noreply,
+   "blogspot": generators.blogspot,
+   "hn": generators.hackernews_comments,
 }
+
+# if your feeds complain about updating this value you need to look at the changelog to find out what to update
+version = 2

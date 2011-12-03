@@ -1,10 +1,10 @@
 Deps: lxml (python-lxml in debian)
 
-atom_maker generates Atom feeds out of pages that do not have them.  It comes out of the box with code for Hacker News comments, Gelbooru tag searches, Bugzilla bugs and Twitter feeds.  Implementing code for a new site is easy.  atom_maker doesn't keep any state - you've been warned.
+atom_maker generates Atom feeds out of pages that do not have them.  It comes out of the box with code for Hacker News comments, Gelbooru tag searches, Bugzilla bugs, Blogspot blogs and special Twitter feed code to strip away @replies.  Implementing code for a new site is easy.  atom_maker doesn't keep any state - you've been warned.
 
 Setup
 -----
-Take a look at generators.py to see what sites are available and what arguments the code takes.  Configure your feeds in prefs.py and browse to rg.py to see your new feed!
+Take a look at generators.py to see what sites are available and what arguments the code takes.  Configure your feeds in prefs.py and browse to rg.py to see your new feed!  Most users can get away with copying prefs.py.example over.
 
 Creating a new generator
 ------------------------

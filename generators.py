@@ -20,8 +20,6 @@ from util import create_error_feed as err
 badparse = "The page couldn't be parsed properly.  It's likely that the page's markup has changed and your atom_maker needs to be updated."
 badfetch = "The page couldn't be fetched.  The website might be down."
 
-#when adding a generator don't forget to add it to the dict at the end of the file!
-
 #generator spec:
 
 #you must have an author field in the overall feed or an author field for all entries.
@@ -83,14 +81,17 @@ def blogspot(arg):
    rval["updated"] = rval["entries"][0]["updated"] #assume the first entry is the newest
    return rval
 
-def twitter_noreply(arg):
+def twitter_noreply(username):
    """Strips out @replies from a user's twitter feed.
-   arg is a tuple of strings (username, uid).
-   username is case-sensitive
-   uid has to be looked up from the user's rss feed (afaict)"""
+   username is case-sensitive!  It needs to be the same case as the user has on twitter.com"""
    from lxml import etree
    import sys
-   username, uid = arg
+   import urllib
+
+   try:
+      uid = urllib.urlopen("http://www.idfromuser.com/getID.php?username=%s" % username).readlines()[0]
+   except:
+      err("Couldn't figure out the twitter user ID.  You might need to update atom_maker.")
 
    try:
       t = etree.parse('http://twitter.com/statuses/user_timeline/%s.rss' % uid)
@@ -152,7 +153,7 @@ def _bz4(arg, url):
    return rval
 
 def gelbooru(arg):
-   """Gets the latest posts for a given tag query.  Arg is the query, no need to urlencode spaces"""
+   """Gets the latest posts for a given tag query.  Arg is the query"""
    from lxml import etree
    url = 'http://gelbooru.com/index.php?page=post&s=list&tags=%s' % arg
    rval = {"id": url,
@@ -211,12 +212,3 @@ def hackernews_comments(arg):
       rval["entries"].append(entry)
 
    return rval
-
-generators = {
-   "hackernews_comments": hackernews_comments,
-   "gelbooru": gelbooru,
-   "bmo": bmo,
-   "redhat_sources_bz": redhat_sources_bz,
-   "twitter_noreply": twitter_noreply,
-   "blogspot": blogspot
-}

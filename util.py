@@ -3,10 +3,11 @@ def rfc3339(d): # https://bitbucket.org/henry/rfc3339/src/tip/rfc3339.py
 
 def create_error_feed(error_msg):
    """In case of an unrecoverable error print out an error feed and exit"""
+   from cgi import escape
    error_id = "https://github.com/dgilman/atom_maker"
    import datetime
    now = rfc3339(datetime.datetime.now())
-   print u'<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Internal feed error</title><id>%s</id><updated>%s</updated><author><name>atom_maker</name></author><entry><title>%s</title><id>%s</id><updated>%s</updated><content type="text">%s</content></entry></feed>' % (error_id, now, error_msg.partition('\n')[0], error_id, now, error_msg)
+   print u'<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Internal feed error</title><id>%s</id><updated>%s</updated><author><name>atom_maker</name></author><entry><title>%s</title><id>%s</id><updated>%s</updated><content type="html">%s</content></entry></feed>' % (error_id, now, error_msg.partition('\n')[0], error_id, now, escape("<pre>"+error_msg+"</pre>"))
    import sys
    sys.exit()
 
