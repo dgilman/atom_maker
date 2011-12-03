@@ -96,7 +96,7 @@ def create_atom(feed):
    xml.append(u'</feed>')
    return "".join(xml)
 
-def get_feed_prefs(name):
+def get_feed_generator(name):
    """Returns the generator function corresponding to a feed entry in the prefs file."""
    try:
       import prefs
@@ -113,7 +113,7 @@ def get_feed(name):
    """Get the entry for name from prefs and run the appropriate generator.
    Return the generated dict."""
    generator_name, underscore, generator_args = name.partition("_")
-   generator = get_feed_prefs(generator_name)
+   generator = get_feed_generator(generator_name)
    return generator(generator_args)
 
 def cli():
