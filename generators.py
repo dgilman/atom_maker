@@ -132,6 +132,7 @@ def _bz4(arg, url):
       e.attrib["style"] = "white-space:pre-wrap"
 
    for comment in comments:
+      link = url + "#" + comment.attrib['id']
       time = comment.xpath("div/span[@class='bz_comment_time']")[0].text.strip("\n ")
       timebits = time.split()
       pseudo = timebits[0]+ "T" + timebits[1] + "-07:00" #pseudo rfc3339
@@ -140,14 +141,14 @@ def _bz4(arg, url):
          name = fn[0].text
       else: #user didn't give a full name to bugzilla
          name = comment.xpath("div/span/span")[0].text[:-1] #random newline
-      entry = {"id": comment.attrib["id"],
+      entry = {"id": link,
                "title": u"Comment %s - %s - %s" % (comment.attrib["id"][1:], name, time),
                "content": etree.tostring(comment.xpath("pre[@class='bz_comment_text']")[0]),
                "content_type": "html",
                "author": name,
                "updated": pseudo,
                "published": pseudo,
-               "link": "%s#%s" % (url, comment.attrib["id"])}
+               "link": link}
       rval["entries"].append(entry)
       rval["updated"] = pseudo #the last updated time of the global feed is the post time of the last comment... for now
    return rval
@@ -171,11 +172,11 @@ def gelbooru(arg):
 
    for post in posts:
       post.xpath('a')[0].attrib['href'] = 'http://gelbooru.com/' + post.xpath('a')[0].attrib['href']
-      entry = {"id": post.attrib["id"],
+      entry = {"id": post.xpath('a')[0].attrib["href"],
                "title": post.xpath('a/img')[0].attrib["alt"],
                "content": etree.tostring(post.xpath('a')[0]),
                "content_type": "html",
-               "link": "http://gelbooru.com/%s" % post.xpath('a')[0].attrib["href"]}
+               "link": post.xpath('a')[0].attrib["href"]}
       rval["entries"].append(entry)
    return rval
 
