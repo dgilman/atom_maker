@@ -106,13 +106,104 @@ def twitter_noreply(username):
    print etree.tostring(t).encode('UTF-8')
    sys.exit()
 
-def redhat_sources_bz(arg):
-   return _bz4(arg, 'http://sourceware.org/bugzilla')
+# BUGZILLA GENERATORS
 
-def bmo(arg):
-   return _bz4(arg, 'https://bugzilla.mozilla.org')
+# The _bz4_screenscrape works on bz4 (and probably bz3).
+# If the bugzilla in question has bugzilla 3.4 or greater you can use _bz_xmlrpc
+# Protip: the bugzilla version is listed on the release notes page linked on the Bugzilla's front page
 
-def _bz4(arg, url):
+# Bugzilla generators take two args: bug id as a string and the path to the bugzilla installation (without a slash)
+
+def redhat_sources_bz(arg, history=True, ccs=False):
+   return _bz_xmlrpc(arg, 'http://sourceware.org/bugzilla', history, ccs)
+
+def bmo(arg, history=True, ccs=False):
+   return _bz_xmlrpc(arg, 'https://bugzilla.mozilla.org', history, ccs)
+
+def _bz_xmlrpc(arg, url, history=True, ccs=False):
+   """arg: bug id as string
+   url: path to bugzilla installation
+   history: put history changes in feed (optional, default true)
+   ccs: include cc changes in history (optional, default false)"""
+   import xmlrpclib
+   from util import rfc3339
+
+   p = xmlrpclib.ServerProxy(url + "/xmlrpc.cgi", use_datetime=True)
+
+   bugdata = p.Bug.get({"ids":[arg], "permissive": True})
+   if len(bugdata['faults']) > 0: err(bugdata['faults'][0]['faultString'])
+   bugdata = bugdata["bugs"][0]
+
+   guid = '%s/show_bug.cgi?id=%s' % (url, str(bugdata['id'])) # get the ID in case the query string used the bug alias
+   rval = {"id": guid,
+           "link": guid,
+           "updated": rfc3339(bugdata['last_change_time']),
+           "title": bugdata['summary'],
+           "entries": []}
+
+   bugcomments = p.Bug.comments({"ids":[arg]})["bugs"][arg]['comments']
+
+   commenting_users = [x['author'] for x in bugcomments]
+   if history:
+      bug_history = p.Bug.history({"ids":[arg]})['bugs'][0]['history']
+      commenting_users.extend([h['who'] for h in bug_history])
+   real_names = p.User.get({"names": commenting_users})["users"]
+   real_name_lookup = {}
+   for user in real_names:
+      if len(user['real_name']) != 0:
+         real_name_lookup[user['name']] = user['real_name']
+      else:
+         real_name_lookup[user['name']] = user['name']
+
+   if history:
+      for bug_history_change_no, bug_history_change in enumerate(bug_history):
+         # don't even create an rss entry if cc is the only thing that's changed and we're ignoring ccs
+          if len(bug_history_change['changes']) == 0 and bug_history_change['field_name'] == 'cc' and ccs == False:
+             continue
+          history_id = guid + "#h" + str(bug_history_change_no)
+
+          content = ["<pre>"]
+          for field_change in bug_history_change['changes']:
+             if field_change['field_name'] == 'cc' and ccs == False:
+                continue
+             content.append("Field <b>%s</b>:\n" % field_change['field_name'])
+             content.append("Removed:\n")
+             content.append("     %s\n" % field_change['removed'])
+             content.append("Added:\n")
+             content.append("     %s\n\n" % field_change['added'])
+          content.append("</pre>")
+
+          entry = {"id": history_id,
+                   "title": "%s changed at %s" % (real_name_lookup[bug_history_change['who']], rfc3339(bug_history_change['when'])),
+                   "author": real_name_lookup[bug_history_change['who']],
+                   "updated":  rfc3339(bug_history_change['when']),
+                   "published": bug_history_change['when'], # keep for sorting
+                   "link": history_id,
+                   "content": "".join(content),
+                   "content_type": "html"}
+          rval["entries"].append(entry)
+
+   for comment_no, comment in enumerate(bugcomments):
+      comment_id = guid + "#c" + str(comment_no)
+      real_name = real_name_lookup[comment['author']]
+      comment_time_str = rfc3339(comment['time'])
+      entry = {"id": comment_id,
+               "title": u"Comment %s - %s - %s" % (str(comment_no), real_name, comment_time_str),
+               "content": "<pre>" + comment['text'] + "</pre>",
+               "content_type": "html",
+               "author": real_name,
+               "updated": comment_time_str,
+               "published": comment['time'], # keep for sorting
+               "link": comment_id}
+      rval["entries"].append(entry)
+
+   rval["entries"].sort(key=lambda e: e["published"])
+   for entry in rval["entries"]:
+      entry["published"] = rfc3339(entry["published"])
+
+   return rval
+
+def _bz4_screenscrape(arg, url):
    #TODO: not assume everyone's in PST
    from lxml import etree
    import urllib #bugzilla.mozilla.org forces https which libxml2 balks at
