@@ -157,8 +157,8 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
 
    if history:
       for bug_history_change_no, bug_history_change in enumerate(bug_history):
-         # don't even create an rss entry if cc is the only thing that's changed and we're ignoring ccs
-          if len(bug_history_change['changes']) == 0 and bug_history_change['field_name'] == 'cc' and ccs == False:
+          # don't even create an rss entry if cc is the only thing that's changed and we're ignoring ccs
+          if len(bug_history_change['changes']) == 1 and bug_history_change['changes'][0]['field_name'] == 'cc' and ccs == False:
              continue
           history_id = guid + "#h" + str(bug_history_change_no)
 
