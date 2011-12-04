@@ -119,6 +119,9 @@ def cli():
       print "Give the name of a feed to generate"
       sys.exit()
 
+   os.environ['SERVER_NAME'] = "cli"
+   os.environ['REQUEST_URI'] = sys.argv[1]
+
    print create_atom(get_feed(sys.argv[1].decode('UTF-8'))).encode('UTF-8')
 
 def page():
