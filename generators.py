@@ -138,7 +138,7 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
    rval = {"id": guid,
            "link": guid,
            "updated": rfc3339(bugdata['last_change_time']),
-           "title": bugdata['summary'],
+           "title": "Bug %s - " % arg + bugdata['summary'],
            "entries": []}
 
    bugcomments = p.Bug.comments({"ids":[arg]})["bugs"][arg]['comments']
