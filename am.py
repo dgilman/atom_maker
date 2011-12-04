@@ -21,6 +21,7 @@
 import sys
 import os
 import cgi
+import datetime
 
 VERSION = 2
 
@@ -31,7 +32,8 @@ def create_atom(feed):
    """Validates the generator output and creates the ATOM feed"""
    xml = []
 
-   import datetime
+   a_e = lambda s: s.replace('&', '%26')
+
    now = rfc3339(datetime.datetime.now())
 
    if not feed:
@@ -45,18 +47,18 @@ def create_atom(feed):
    if not "entries" in feed:
       err("The feed lacks entries.")
 
-   xml.append(u'<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>%s</title><id>%s</id><updated>%s</updated>' % (feed["title"], feed["id"], feed["updated"]))
+   xml.append(u'<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>%s</title><id>%s</id><updated>%s</updated>' % (feed["title"], a_e(feed["id"]), feed["updated"]))
    if "author" in feed:
       xml.append(u'<author><name>%s</name>' % feed["author"])
       if "author_uri" in feed:
-         xml.append(u'<uri>%s</uri>' % feed["author_uri"])
+         xml.append(u'<uri>%s</uri>' % a_e(feed["author_uri"]))
       xml.append(u'</author>')
    if "subtitle" in feed:
       xml.append(u'<subtitle>%s</subtitle>' % feed["subtitle"])
    if "link" in feed:
-      xml.append(u'<link href="%s" />' % feed["link"])
+      xml.append(u'<link href="%s" />' % a_e(feed["link"]))
    xml.append(u'<generator uri="https://github.com/dgilman/atom_maker" version="%s">atom_maker</generator>' % str(VERSION))
-   xml.append('<link rel="self" href="http://%s%s" />' % (os.environ['SERVER_NAME'], os.environ['REQUEST_URI']))
+   xml.append('<link rel="self" href="http://%s%s" />' % (os.environ['SERVER_NAME'], a_e(os.environ['REQUEST_URI'])))
 
    #validate individual entries.
 
@@ -81,17 +83,17 @@ def create_atom(feed):
       if entry["content_type"] == "html":
          entry["content"] = cgi.escape(entry["content"])
 
-      xml.append(u'<entry><id>%s</id><title>%s</title><content type="%s">%s</content><updated>%s</updated>' % (entry["id"], entry["title"], entry["content_type"],entry["content"], entry["updated"]))
+      xml.append(u'<entry><id>%s</id><title>%s</title><content type="%s">%s</content><updated>%s</updated>' % (a_e(entry["id"]), entry["title"], entry["content_type"],entry["content"], entry["updated"]))
 
       if "author" in entry:
          xml.append(u'<author><name>%s</name>' % entry["author"])
          if "author_uri" in entry:
-            xml.append(u'<uri>%s</uri>' % entry["author_uri"])
+            xml.append(u'<uri>%s</uri>' % a_e(entry["author_uri"]))
          xml.append(u'</author>')
       if "published" in entry:
          xml.append(u'<published>%s</published>' % entry["published"])
       if "link" in entry:
-         xml.append(u'<link href="%s" />' % entry["link"])
+         xml.append(u'<link href="%s" />' % a_e(entry["link"]))
 
       xml.append(u'</entry>')
    xml.append(u'</feed>')
