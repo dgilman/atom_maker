@@ -167,6 +167,8 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
              if field_change['field_name'] == 'cc' and ccs == False:
                 continue
              content.append("Field <b>%s</b>:\n" % field_change['field_name'])
+             if field_change['field_name'] == 'attachments.isobsolete':
+                content.append('<a href="%s/attachment.cgi?id=%d">Attachment #%d</a> is obsolete\n' % (url, field_change['attachment_id'], field_change['attachment_id']))
              content.append("Removed:\n")
              content.append("     %s\n" % field_change['removed'])
              content.append("Added:\n")
