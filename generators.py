@@ -162,7 +162,7 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
              continue
           history_id = guid + "#h" + str(bug_history_change_no)
 
-          content = ["<pre>"]
+          content = ['<pre style="white-space:pre-wrap">']
           for field_change in bug_history_change['changes']:
              if field_change['field_name'] == 'cc' and ccs == False:
                 continue
@@ -191,7 +191,7 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
       comment_time_str = rfc3339(comment['time'])
       entry = {"id": comment_id,
                "title": u"Comment %s - %s - %s" % (str(comment_no), real_name, comment_time_str),
-               "content": "<pre>" + comment['text'] + "</pre>",
+               "content": '<pre style="white-space:pre-wrap">' + comment['text'] + "</pre>",
                "content_type": "html",
                "author": real_name,
                "updated": comment_time_str,
