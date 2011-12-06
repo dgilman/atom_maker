@@ -129,7 +129,18 @@ def cli():
    os.environ['SERVER_NAME'] = "cli"
    os.environ['REQUEST_URI'] = sys.argv[1]
 
-   print create_atom(get_feed(sys.argv[1].decode('UTF-8'))).encode('UTF-8')
+   has_xml = True
+   try:
+      import lxml.etree as etree
+   except:
+      has_xml = False
+
+   feed = create_atom(get_feed(sys.argv[1].decode('UTF-8'))).encode('UTF-8')
+
+   if not has_xml:
+      print feed
+   else:
+      print etree.tostring(etree.fromstring(feed), pretty_print = True, encoding="UTF-8")
 
 def page():
    args = cgi.parse()
