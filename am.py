@@ -25,6 +25,8 @@ import datetime
 
 VERSION = 2
 
+# generators imported here to avoid syntax errors bubbling up when importing prefs
+import generators
 from util import create_error_feed as err
 from util import rfc3339
 
@@ -101,7 +103,10 @@ def create_atom(feed):
 
 def get_feed_generator(name):
    """Returns the generator function corresponding to a feed entry in the prefs file."""
-   import prefs
+   try:
+      import prefs
+   except:
+      err("Your prefs file has a typo in it.")
    if prefs.version != VERSION:
       err("You need to migrate your prefs file to the latest version!  See the changelog for help.")
    try:

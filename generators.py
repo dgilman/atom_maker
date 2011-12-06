@@ -130,7 +130,10 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
 
    p = xmlrpclib.ServerProxy(url + "/xmlrpc.cgi", use_datetime=True)
 
-   bugdata = p.Bug.get({"ids":[arg], "permissive": True})
+   try:
+      bugdata = p.Bug.get({"ids":[arg], "permissive": True})
+   except:
+      err(badfetch)
    if len(bugdata['faults']) > 0: err(bugdata['faults'][0]['faultString'])
    bugdata = bugdata["bugs"][0]
 
@@ -141,13 +144,22 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
            "title": "Bug %s - " % arg + bugdata['summary'],
            "entries": []}
 
-   bugcomments = p.Bug.comments({"ids":[arg]})["bugs"][arg]['comments']
+   try:
+      bugcomments = p.Bug.comments({"ids":[arg]})["bugs"][arg]['comments']
+   except:
+      err(badfetch)
 
    commenting_users = [x['author'] for x in bugcomments]
    if history:
-      bug_history = p.Bug.history({"ids":[arg]})['bugs'][0]['history']
+      try:
+         bug_history = p.Bug.history({"ids":[arg]})['bugs'][0]['history']
+      except:
+         err(badfetch)
       commenting_users.extend([h['who'] for h in bug_history])
-   real_names = p.User.get({"names": commenting_users})["users"]
+   try:
+      real_names = p.User.get({"names": commenting_users})["users"]
+   except:
+      err(badfetch)
    real_name_lookup = {}
    for user in real_names:
       if len(user['real_name']) != 0:
