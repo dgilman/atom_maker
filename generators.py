@@ -112,7 +112,11 @@ def twitter_noreply(username):
 # If the bugzilla in question has bugzilla 3.4 or greater you can use _bz_xmlrpc
 # Protip: the bugzilla version is listed on the release notes page linked on the Bugzilla's front page
 
-# Bugzilla generators take two args: bug id as a string and the path to the bugzilla installation (without a slash)
+# Bugzilla generators take four args: 
+# bug id as a string
+# path to the bugzilla installation (without a slash)
+# history: boolean whether or not you want field updates as feed entries
+# ccs: boolean whether or not you want history updates to include cc changes
 
 def redhat_sources_bz(arg, history=True, ccs=False):
    return _bz_xmlrpc(arg, 'http://sourceware.org/bugzilla', history, ccs)
