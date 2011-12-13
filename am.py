@@ -34,7 +34,7 @@ def create_atom(feed):
    """Validates the generator output and creates the ATOM feed"""
    xml = []
 
-   a_e = lambda s: s.replace('&', '%26')
+   esc = cgi.escape
 
    now = rfc3339(datetime.datetime.now())
 
@@ -49,18 +49,18 @@ def create_atom(feed):
    if not "entries" in feed:
       err("The feed lacks entries.")
 
-   xml.append(u'<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>%s</title><id>%s</id><updated>%s</updated>' % (feed["title"], a_e(feed["id"]), feed["updated"]))
+   xml.append(u'<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>%s</title><id>%s</id><updated>%s</updated>' % (feed["title"], esc(feed["id"]), feed["updated"]))
    if "author" in feed:
       xml.append(u'<author><name>%s</name>' % feed["author"])
       if "author_uri" in feed:
-         xml.append(u'<uri>%s</uri>' % a_e(feed["author_uri"]))
+         xml.append(u'<uri>%s</uri>' % esc(feed["author_uri"]))
       xml.append(u'</author>')
    if "subtitle" in feed:
       xml.append(u'<subtitle>%s</subtitle>' % feed["subtitle"])
    if "link" in feed:
-      xml.append(u'<link href="%s" />' % a_e(feed["link"]))
+      xml.append(u'<link href="%s" />' % esc(feed["link"]))
    xml.append(u'<generator uri="https://github.com/dgilman/atom_maker" version="%s">atom_maker</generator>' % str(VERSION))
-   xml.append('<link rel="self" href="http://%s%s" />' % (os.environ['SERVER_NAME'], a_e(os.environ['REQUEST_URI'])))
+   xml.append('<link rel="self" href="http://%s%s" />' % (os.environ['SERVER_NAME'], esc(os.environ['REQUEST_URI'])))
 
    #validate individual entries.
 
@@ -83,19 +83,19 @@ def create_atom(feed):
          entry["updated"] = now
 
       if entry["content_type"] == "html":
-         entry["content"] = cgi.escape(entry["content"])
+         entry["content"] = esc(entry["content"])
 
-      xml.append(u'<entry><id>%s</id><title>%s</title><content type="%s">%s</content><updated>%s</updated>' % (a_e(entry["id"]), entry["title"], entry["content_type"],entry["content"], entry["updated"]))
+      xml.append(u'<entry><id>%s</id><title>%s</title><content type="%s">%s</content><updated>%s</updated>' % (esc(entry["id"]), entry["title"], entry["content_type"],entry["content"], entry["updated"]))
 
       if "author" in entry:
          xml.append(u'<author><name>%s</name>' % entry["author"])
          if "author_uri" in entry:
-            xml.append(u'<uri>%s</uri>' % a_e(entry["author_uri"]))
+            xml.append(u'<uri>%s</uri>' % esc(entry["author_uri"]))
          xml.append(u'</author>')
       if "published" in entry:
          xml.append(u'<published>%s</published>' % entry["published"])
       if "link" in entry:
-         xml.append(u'<link href="%s" />' % a_e(entry["link"]))
+         xml.append(u'<link href="%s" />' % esc(entry["link"]))
 
       xml.append(u'</entry>')
    xml.append(u'</feed>')
