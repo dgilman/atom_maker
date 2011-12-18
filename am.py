@@ -22,8 +22,11 @@ import sys
 import os
 import cgi
 import datetime
+import sqlite3
 
 VERSION = 2
+cache_length = datetime.timedelta(hours=6)
+now = datetime.datetime.now()
 
 # generators imported here to avoid syntax errors bubbling up when importing prefs
 import generators
@@ -36,7 +39,7 @@ def create_atom(feed):
 
    esc = cgi.escape
 
-   now = rfc3339(datetime.datetime.now())
+   ts = rfc3339(now)
 
    if not feed:
       err("Your generator forgot to return a dict.")
@@ -45,7 +48,7 @@ def create_atom(feed):
    if not "id" in feed:
       err("The feed lacks a UUID.")
    if not "updated" in feed:
-      feed["updated"] = now
+      feed["updated"] = ts
    if not "entries" in feed:
       err("The feed lacks entries.")
 
@@ -80,7 +83,7 @@ def create_atom(feed):
       if not "content_type" in entry:
          err("All entries need a content_type.  It must be text, html or xhtml depending on the content.")
       if not "updated" in entry:
-         entry["updated"] = now
+         entry["updated"] = ts
 
       if entry["content_type"] == "html":
          entry["content"] = esc(entry["content"])
@@ -121,6 +124,22 @@ def get_feed(name):
    generator = get_feed_generator(generator_name)
    return generator(generator_args)
 
+def feed_cache(qs, flush=False):
+   conn = sqlite3.connect("cache.sqlite3", detect_types=sqlite3.PARSE_DECLTYPES)
+   c = conn.cursor()
+
+   c.execute("create table if not exists cache (qs text primary key, ts timestamp, feed text)")
+
+   cache = c.execute("select ts, feed from cache where qs = ?", (qs,)).fetchall()
+   if len(cache) == 0 or (now - cache[0][0] > cache_length) or flush:
+      rval = create_atom(get_feed(qs))
+      c.execute("replace into cache values (?, ?, ?)", (qs, now, rval))
+      conn.commit()
+   else:
+      rval = cache[0][1]
+   conn.close()
+   return rval
+
 def cli():
    if len(sys.argv) < 2:
       print "Give the name of a feed to generate"
@@ -135,7 +154,7 @@ def cli():
    except:
       has_xml = False
 
-   feed = create_atom(get_feed(sys.argv[1].decode('UTF-8'))).encode('UTF-8')
+   feed = feed_cache(sys.argv[1].decode('UTF-8'), flush=True).encode('UTF-8')
 
    if not has_xml:
       print feed
@@ -144,12 +163,15 @@ def cli():
 
 def page():
    args = cgi.parse()
+   flush = False
 
    print "Content-Type: application/atom+xml;charset=UTF-8"
    print ""
    if not "feed" in args:
       err("Feed requested must be in the query string (am.py?feed=foo).")
-   print create_atom(get_feed(args["feed"][0])).encode('UTF-8')
+   if "flush" in args:
+      flush = True
+   print feed_cache(args["feed"][0], flush).encode('UTF-8')
 
 if 'REQUEST_METHOD' in os.environ and os.environ['REQUEST_METHOD'] == 'GET':
    try:
