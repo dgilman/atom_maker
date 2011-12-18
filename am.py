@@ -171,7 +171,7 @@ def page():
       err("Feed requested must be in the query string (am.py?feed=foo).")
    if "flush" in args:
       flush = True
-   print feed_cache(args["feed"][0], flush).encode('UTF-8')
+   print feed_cache(args["feed"][0].decode('UTF-8'), flush).encode('UTF-8')
 
 if 'REQUEST_METHOD' in os.environ and os.environ['REQUEST_METHOD'] == 'GET':
    try:
