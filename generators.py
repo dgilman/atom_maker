@@ -130,6 +130,9 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
    history: put history changes in feed (optional, default true)
    ccs: include cc changes in history (optional, default false)"""
    import xmlrpclib
+   import sqlite3
+   import datetime
+   now = datetime.datetime.now()
    from util import rfc3339
 
    p = xmlrpclib.ServerProxy(url + "/xmlrpc.cgi", use_datetime=True)
@@ -160,17 +163,33 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
       except:
          err(badfetch)
       commenting_users.extend([h['who'] for h in bug_history])
-   try:
-      real_names = p.User.get({"names": commenting_users})["users"]
-   except:
-      err(badfetch)
-   real_name_lookup = {}
-   for user in real_names:
-      if len(user['real_name']) != 0:
-         real_name_lookup[user['name']] = user['real_name']
-      else:
-         real_name_lookup[user['name']] = user['name']
 
+   conn = sqlite3.connect("cache.sqlite3")
+   c = conn.cursor()
+   c.execute("pragma temp_store = MEMORY")
+   c.execute("create temp table email_queries (email text unique)")
+   c.execute("create table if not exists bugzillas (id integer primary key, url text unique)")
+   c.execute("create table if not exists bugzilla_users (email text, name text, ts integer, bz integer, foreign key(bz) references bugzillas(id))")
+   c.execute("create index if not exists bugzilla_user_ts_index on bugzilla_users (ts asc)")
+   c.execute("insert or ignore into bugzillas (id, url) values (NULL, ?)", (url,))
+   bz_id = c.execute("select id from bugzillas where url = ?", (url,)).fetchall()[0][0]
+   c.execute("delete from bugzilla_users where ts <= ?", (now.year*100 + now.month - 1,))
+
+   c.executemany("insert or ignore into email_queries (email) values (?)", ((e,) for e in commenting_users))
+   cache_misses = c.execute("select email from email_queries where not exists (select 1 from bugzilla_users where bugzilla_users.bz = ? and bugzilla_users.email = email_queries.email)", (bz_id,)).fetchall()
+   if len(cache_misses) > 0:
+      try:
+         real_names = p.User.get({"names": [e[0] for e in cache_misses]})["users"]
+      except:
+         err(badfetch)
+      for user in real_names:
+         if len(user['real_name']) != 0:
+            rn = user['real_name']
+         else:
+            rn = user['name']
+         c.execute("insert into bugzilla_users (email, name, ts, bz) values (?, ?, ?, ?)", (user['name'], rn, now.year*100 + now.month, bz_id))
+
+   rn = lambda x: c.execute("select name from bugzilla_users where bz = ? and email = ?", (bz_id, x)).fetchall()[0][0]
    if history:
       for bug_history_change_no, bug_history_change in enumerate(bug_history):
           # don't even create an rss entry if cc is the only thing that's changed and we're ignoring ccs
@@ -191,10 +210,12 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
              content.append("     %s\n\n" % field_change['added'])
           content.append("</pre>")
 
+          real_name = rn(bug_history_change['who'])
+          when = rfc3339(bug_history_change['when'])
           entry = {"id": history_id,
-                   "title": "%s changed at %s" % (real_name_lookup[bug_history_change['who']], rfc3339(bug_history_change['when'])),
-                   "author": real_name_lookup[bug_history_change['who']],
-                   "updated":  rfc3339(bug_history_change['when']),
+                   "title": "%s changed at %s" % (real_name, when),
+                   "author": real_name,
+                   "updated":  when,
                    "published": bug_history_change['when'], # keep for sorting
                    "link": history_id,
                    "content": "".join(content),
@@ -203,7 +224,7 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
 
    for comment_no, comment in enumerate(bugcomments):
       comment_id = guid + "#c" + str(comment_no)
-      real_name = real_name_lookup[comment['author']]
+      real_name = rn(comment['author'])
       comment_time_str = rfc3339(comment['time'])
       entry = {"id": comment_id,
                "title": u"Comment %s - %s - %s" % (str(comment_no), real_name, comment_time_str),
@@ -214,6 +235,10 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
                "published": comment['time'], # keep for sorting
                "link": comment_id}
       rval["entries"].append(entry)
+
+   # finally done with the db
+   conn.commit()
+   conn.close()
 
    rval["entries"].sort(key=lambda e: e["published"])
    for entry in rval["entries"]:
