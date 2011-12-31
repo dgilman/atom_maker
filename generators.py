@@ -166,11 +166,8 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
 
    conn = sqlite3.connect("cache.sqlite3")
    c = conn.cursor()
-   c.execute("pragma temp_store = MEMORY")
-   c.execute("create temp table email_queries (email text unique)")
-   c.execute("create table if not exists bugzillas (id integer primary key, url text unique)")
-   c.execute("create table if not exists bugzilla_users (email text, name text, ts integer, bz integer, foreign key(bz) references bugzillas(id))")
-   c.execute("create index if not exists bugzilla_user_ts_index on bugzilla_users (ts asc)")
+   c.executescript("""pragma temp_store = MEMORY;
+create temp table email_queries (email text unique);""")
    c.execute("insert or ignore into bugzillas (id, url) values (NULL, ?)", (url,))
    bz_id = c.execute("select id from bugzillas where url = ?", (url,)).fetchall()[0][0]
    c.execute("delete from bugzilla_users where ts <= ?", (now.year*100 + now.month - 1,))
@@ -190,6 +187,7 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
          c.execute("insert into bugzilla_users (email, name, ts, bz) values (?, ?, ?, ?)", (user['name'], rn, now.year*100 + now.month, bz_id))
 
    rn = lambda x: c.execute("select name from bugzilla_users where bz = ? and email = ?", (bz_id, x)).fetchall()[0][0]
+
    if history:
       for bug_history_change_no, bug_history_change in enumerate(bug_history):
           # don't even create an rss entry if cc is the only thing that's changed and we're ignoring ccs

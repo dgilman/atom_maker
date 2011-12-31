@@ -32,6 +32,7 @@ now = datetime.datetime.now()
 import generators
 from util import create_error_feed as err
 from util import rfc3339
+import schema
 
 def create_atom(feed):
    """Validates the generator output and creates the ATOM feed"""
@@ -131,8 +132,7 @@ def get_feed(name):
 def feed_cache(qs, flush=False):
    conn = sqlite3.connect("cache.sqlite3", detect_types=sqlite3.PARSE_DECLTYPES)
    c = conn.cursor()
-
-   c.execute("create table if not exists cache (qs text primary key, ts timestamp, feed text)")
+   schema.check(c)
 
    cache = c.execute("select ts, feed from cache where qs = ?", (qs,)).fetchall()
    if len(cache) == 0 or (now - cache[0][0] > cache_length) or flush:
