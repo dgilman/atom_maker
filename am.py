@@ -108,8 +108,12 @@ def get_feed_generator(name):
    """Returns the generator function corresponding to a feed entry in the prefs file."""
    try:
       import prefs
-   except:
+   except SyntaxError:
       err("Your prefs file has a typo in it.")
+   except ImportError:
+      err("Your prefs.py file is missing.")
+   except:
+      err("prefs.py couldn't be imported.")
    if prefs.version != VERSION:
       err("You need to migrate your prefs file to the latest version!  See the changelog for help.")
    try:
