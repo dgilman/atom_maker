@@ -94,7 +94,7 @@ def create_atom(feed):
       if "author" in entry:
          xml.append('<author><name>%s</name>' % entry["author"])
          if "author_uri" in entry:
-            xml.append(u'<uri>%s</uri>' % esc(entry["author_uri"]))
+            xml.append('<uri>%s</uri>' % esc(entry["author_uri"]))
          xml.append('</author>')
       if "published" in entry:
          xml.append('<published>%s</published>' % entry["published"])
@@ -149,7 +149,7 @@ def cli():
       print "Give the name of a feed to generate"
       sys.exit()
 
-   os.environ['SERVER_NAME'] = "cli"
+   os.environ['SERVER_NAME'] = "cli/"
    os.environ['REQUEST_URI'] = sys.argv[1]
 
    has_xml = True
@@ -177,11 +177,12 @@ def page():
       flush = True
    print feed_cache(args["feed"][0].decode('UTF-8'), flush).encode('UTF-8')
 
-if 'REQUEST_METHOD' in os.environ and os.environ['REQUEST_METHOD'] == 'GET':
-   try:
-      page()
-   except Exception: # this catches everything but sys.exit()
-      import traceback
-      err("An uncaught exception has occured.  The generator may no longer be compatible with your webpage.\n%s" % traceback.format_exc())
-else: # fuck it, we're cli
-   cli()
+if __name__ == "__main__":
+   if 'REQUEST_METHOD' in os.environ and os.environ['REQUEST_METHOD'] == 'GET':
+      try:
+         page()
+      except Exception: # this catches everything but sys.exit()
+         import traceback
+         err("An uncaught exception has occured.  The generator may no longer be compatible with your webpage.\n%s" % traceback.format_exc())
+   else: # fuck it, we're cli
+      cli()

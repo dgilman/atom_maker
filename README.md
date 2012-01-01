@@ -4,7 +4,7 @@ atom_maker generates Atom feeds out of pages that do not have them.  It comes ou
 
 Setup
 -----
-Take a look at generators.py to see what sites are available and what arguments the code takes.  Configure your feeds in prefs.py and browse to rg.py to see your new feed!  Most users can get away with copying prefs.py.example over.
+Take a look at generators.py to see what sites are available and what arguments the code takes.  Configure your feeds in prefs.py and browse to am.py to see your new feed!  Most users can get away with copying prefs.py.example over.
 
 Creating a new generator
 ------------------------
