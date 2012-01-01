@@ -304,8 +304,11 @@ def gelbooru(arg):
 
    for post in posts:
       post.xpath('a')[0].attrib['href'] = 'http://gelbooru.com/' + post.xpath('a')[0].attrib['href']
+      title = post.xpath('a/img')[0].attrib["alt"]
+      del post.xpath('a/img')[0].attrib["alt"]
+      del post.xpath('a/img')[0].attrib["title"]
       entry = {"id": post.xpath('a')[0].attrib["href"],
-               "title": post.xpath('a/img')[0].attrib["alt"],
+               "title": title,
                "content": etree.tostring(post.xpath('a')[0]),
                "content_type": "html",
                "link": post.xpath('a')[0].attrib["href"]}
