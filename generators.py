@@ -132,7 +132,7 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
    import xmlrpclib
    import sqlite3
    import datetime
-   now = datetime.datetime.now()
+   now = datetime.datetime.utcnow()
    from util import rfc3339
 
    p = xmlrpclib.ServerProxy(url + "/xmlrpc.cgi", use_datetime=True)

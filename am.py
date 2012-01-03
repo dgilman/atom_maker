@@ -26,7 +26,7 @@ import sqlite3
 
 VERSION = 2
 cache_length = datetime.timedelta(hours=6)
-now = datetime.datetime.now()
+now = datetime.datetime.utcnow()
 
 # generators imported here to avoid syntax errors bubbling up when importing prefs
 import generators
