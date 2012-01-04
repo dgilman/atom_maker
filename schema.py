@@ -5,7 +5,7 @@
 # 4. Increase SCHEMA_VERSION at the top of this file
 # 5. Submit a pull request!
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 def create_initial_format(c):
    """Schema ver 0 to 1
@@ -18,8 +18,19 @@ create index if not exists bugzilla_user_ts_index on bugzilla_users (ts asc);
 pragma user_version = 1;
 END TRANSACTION;""")
 
+def create_bugzilla_email_index(c):
+   """Create an index for the monster cache miss query.  Rename bugzilla_user -> bugzilla_users"""
+   c.executescript("""BEGIN TRANSACTION;
+drop index if exists bugzilla_user_ts_index;
+create index if not exists bugzilla_users_ts_index on bugzilla_users (ts asc);
+create index if not exists bugzilla_users_bz_email_index on bugzilla_users (bz, email);
+pragma user_version = 2;
+END TRANSACTION;""")
+
 def check(c):
-   upgrade = {0: create_initial_format}
+   #XXX there is a race condition here
+   upgrade = {0: create_initial_format,
+              1: create_bugzilla_email_index}
    ver = c.execute("pragma user_version").fetchall()[0][0]
    while ver < SCHEMA_VERSION:
       upgrade[ver](c)
