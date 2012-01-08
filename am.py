@@ -24,7 +24,7 @@ import cgi
 import datetime
 import sqlite3
 
-VERSION = 2
+VERSION = 3
 cache_length = datetime.timedelta(hours=6)
 now = datetime.datetime.utcnow()
 

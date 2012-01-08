@@ -108,21 +108,19 @@ def twitter_noreply(username):
 
 # BUGZILLA GENERATORS
 
-# The _bz4_screenscrape works on bz4 (and probably bz3).
 # If the bugzilla in question has bugzilla 3.4 or greater you can use _bz_xmlrpc
 # Protip: the bugzilla version is listed on the release notes page linked on the Bugzilla's front page
 
-# Bugzilla generators take four args: 
-# bug id as a string
-# path to the bugzilla installation (without a slash)
-# history: boolean whether or not you want field updates as feed entries
-# ccs: boolean whether or not you want history updates to include cc changes
+# _bz_screenscrape supports all of bugzilla 3 and 4 but lacks the history features
 
 def redhat_sources_bz(arg, history=True, ccs=False):
    return _bz_xmlrpc(arg, 'http://sourceware.org/bugzilla', history, ccs)
 
 def bmo(arg, history=True, ccs=False):
    return _bz_xmlrpc(arg, 'https://bugzilla.mozilla.org', history, ccs)
+
+def webkit(arg):
+   return _bz_screenscrape(arg, 'https://bugs.webkit.org', 3)
 
 def _bz_xmlrpc(arg, url, history=True, ccs=False):
    """arg: bug id as string
@@ -244,10 +242,14 @@ create temp table email_queries (email text unique);""")
 
    return rval
 
-def _bz4_screenscrape(arg, url):
+def _bz_screenscrape(arg, url, bz_version):
+   """arg: bug id as string
+   url: path to bugzilla installation without slash
+   bz_version: integer 3 or 4 corresponding to the installation version"""
    #TODO: not assume everyone's in PST
    from lxml import etree
    import urllib #bugzilla.mozilla.org forces https which libxml2 balks at
+   base_url = url
    url = '%s/show_bug.cgi?id=%s' % (url, arg)
    rval = {"id": url,
            "link": url,
@@ -256,7 +258,7 @@ def _bz4_screenscrape(arg, url):
       tree = etree.parse(urllib.urlopen(url), etree.HTMLParser(encoding="UTF-8"))
    except:
       err(badfetch)
-   comments = tree.xpath("//div[@class='bz_comment']")
+   comments = tree.xpath("//div[contains(@class, 'bz_comment')]")
    if len(comments) == 0: err(badparse)
    rval["title"] = tree.xpath('/html/head/title')[0].text
 
@@ -264,18 +266,31 @@ def _bz4_screenscrape(arg, url):
       e.attrib["style"] = "white-space:pre-wrap"
 
    for comment in comments:
-      link = url + "#" + comment.attrib['id']
-      time = comment.xpath("div/span[@class='bz_comment_time']")[0].text.strip("\n ")
-      timebits = time.split()
-      pseudo = timebits[0]+ "T" + timebits[1] + "-07:00" #pseudo rfc3339
-      fn = comment.xpath("div/span/span/span[@class='fn']")
-      if len(fn) == 1:
-         name = fn[0].text
-      else: #user didn't give a full name to bugzilla
-         name = comment.xpath("div/span/span")[0].text[:-1] #random newline
+      if bz_version == 4:
+         link = url + "#" + comment.attrib['id']
+         time = comment.xpath("div/span[@class='bz_comment_time']")[0].text.strip("\n ")
+         timebits = time.split()
+         pseudo = timebits[0] + "T" + timebits[1] + "-07:00" #pseudo rfc3339
+         fn = comment.xpath("div/span/span/span[@class='fn']")
+         if len(fn) == 1:
+            name = fn[0].text
+         else: #user didn't give a full name to bugzilla
+            name = comment.xpath("div/span/span")[0].text[:-1] #random newline
+         title = "Comment %s - %s - %s" % (comment.attrib["id"][1:], name, time)
+         content = etree.tostring(comment.xpath("pre[@class='bz_comment_text']")[0])
+
+      if bz_version == 3:
+         link = base_url + "/" + comment.xpath("span/i/a")[0].attrib['href']
+         time = comment.xpath("span/i/span")[0].tail.strip("\n ")
+         timebits = time.split()
+         pseudo = timebits[0] + "T" + timebits[1] + "-07:00"
+         name = comment.xpath("span/i/span/a")[0].text # everyone always has a name
+         title = "Comment %s - %s - %s" % (comment.xpath("span/i/a")[0].attrib["name"][1:], name, time)
+         content = etree.tostring(comment.xpath("pre")[0])
+
       entry = {"id": link,
-               "title": u"Comment %s - %s - %s" % (comment.attrib["id"][1:], name, time),
-               "content": etree.tostring(comment.xpath("pre[@class='bz_comment_text']")[0]),
+               "title": title,
+               "content": content,
                "content_type": "html",
                "author": name,
                "updated": pseudo,
