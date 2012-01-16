@@ -54,7 +54,10 @@ def create_atom(feed):
    if not "entries" in feed:
       err("The feed lacks entries.")
 
-   xml.append('<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>%s</title><id>%s</id><updated>%s</updated>' % (feed["title"], esc(feed["id"]), feed["updated"]))
+   xml.append('<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"')
+   if 'lang' in feed:
+      xml.append(' xml:lang="%s"' % feed["lang"])
+   xml.append('><title>%s</title><id>%s</id><updated>%s</updated>' % (feed["title"], esc(feed["id"]), feed["updated"]))
    if "author" in feed:
       xml.append('<author><name>%s</name>' % feed["author"])
       if "author_uri" in feed:
@@ -90,7 +93,10 @@ def create_atom(feed):
       if entry["content_type"] == "html":
          entry["content"] = esc(entry["content"])
 
-      xml.append('<entry><id>%s</id><title>%s</title><content type="%s">%s</content><updated>%s</updated>' % (esc(entry["id"]), entry["title"], entry["content_type"],entry["content"], entry["updated"]))
+      xml.append('<entry')
+      if "lang" in entry:
+         xml.append(' xml:lang="%s"' % entry["lang"])
+      xml.append('><id>%s</id><title>%s</title><content type="%s">%s</content><updated>%s</updated>' % (esc(entry["id"]), entry["title"], entry["content_type"],entry["content"], entry["updated"]))
 
       if "author" in entry:
          xml.append('<author><name>%s</name>' % entry["author"])

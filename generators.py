@@ -34,6 +34,7 @@ badfetch = "The page couldn't be fetched.  The website might be down."
 #(optional) updated: date (rfc3339) of last update.  if not given uses now
 #(optional) subtitle: description
 #(optional) link: page link
+#(optional) lang: xml:lang attribute value for the entire feed.
 #entries: list of dicts of entries (described below)
 
 #entries:
@@ -47,9 +48,11 @@ badfetch = "The page couldn't be fetched.  The website might be down."
 #(optional) published: rfc3339 string of publishing date
 #(optional) updated: date (rfc3339) of last update.  if not given uses now
 #(optional) link: entry link
+#(optional) lang: xml:lang attribute value for this entry.
 
-def twitter_context(arg):
+def twitter_context(arg, lang=None):
    """arg: twitter username
+   lang: optional xml:lang human language for content
    Create a feed giving context to a user's replies."""
    import json
    import urllib
@@ -82,6 +85,9 @@ def twitter_context(arg):
            "title": "Twitter / %s / context" % arg,
            "author": tweets[0]["user"]["name"],
            "entries": []}
+
+   if lang:
+      rval["lang"] = lang
 
    parent_skip_list = []
    for tweet in tweets:
@@ -122,7 +128,7 @@ def twitter_context(arg):
    rval["updated"] = rval["entries"][0]["updated"] # first tweet is newest
    return rval
 
-def blogspot(arg):
+def blogspot(arg, lang=None):
    """Some users don't have RSS feeds turned on.  why_would_you_do_that.jpg"""
    from lxml import etree
 
@@ -139,6 +145,9 @@ def blogspot(arg):
            "link": url,
            "title": t.xpath('//title')[0].text,
            "entries": []}
+
+   if lang:
+      rval["lang"] = lang
 
    for post in posts:
       ts = post.xpath('descendant::abbr[@class="published"]')[0].attrib["title"]
@@ -189,15 +198,15 @@ def twitter_noreply(username):
 # _bz_screenscrape supports all of bugzilla 3 and 4 but lacks the history features
 
 def redhat_sources_bz(arg, history=True, ccs=False):
-   return _bz_xmlrpc(arg, 'http://sourceware.org/bugzilla', history, ccs)
+   return _bz_xmlrpc(arg, 'http://sourceware.org/bugzilla', history, ccs, lang="en")
 
 def bmo(arg, history=True, ccs=False):
-   return _bz_xmlrpc(arg, 'https://bugzilla.mozilla.org', history, ccs)
+   return _bz_xmlrpc(arg, 'https://bugzilla.mozilla.org', history, ccs, lang="en")
 
 def webkit(arg):
-   return _bz_screenscrape(arg, 'https://bugs.webkit.org', 3)
+   return _bz_screenscrape(arg, 'https://bugs.webkit.org', 3, lang="en")
 
-def _bz_xmlrpc(arg, url, history=True, ccs=False):
+def _bz_xmlrpc(arg, url, history=True, ccs=False, lang=None):
    """arg: bug id as string
    url: path to bugzilla installation
    history: put history changes in feed (optional, default true)
@@ -223,6 +232,9 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False):
            "updated": rfc3339(bugdata['last_change_time']),
            "title": "Bug %s - " % arg + bugdata['summary'],
            "entries": []}
+
+   if lang:
+      rval["lang"] = lang
 
    try:
       bugcomments = p.Bug.comments({"ids":[arg]})["bugs"][arg]['comments']
@@ -317,7 +329,7 @@ create temp table email_queries (email text unique);""")
 
    return rval
 
-def _bz_screenscrape(arg, url, bz_version):
+def _bz_screenscrape(arg, url, bz_version, lang=None):
    """arg: bug id as string
    url: path to bugzilla installation without slash
    bz_version: integer 3 or 4 corresponding to the installation version"""
@@ -329,6 +341,8 @@ def _bz_screenscrape(arg, url, bz_version):
    rval = {"id": url,
            "link": url,
            "entries": []}
+   if lang:
+      rval["lang"] = lang
    try:
       tree = etree.parse(urllib.urlopen(url), etree.HTMLParser(encoding="UTF-8"))
    except:
@@ -383,6 +397,7 @@ def gelbooru(arg):
            "title": "%s - Gelbooru" % arg,
            "author": "Gelbooru",
            "link": url,
+           "lang": "en",
            "entries": []}
 
    try:
@@ -410,6 +425,7 @@ def hackernews_comments(arg):
    rval = {"id": 'http://news.ycombinator.com/threads?id=%s' % arg,
            "title": "%s's comments - Hacker News" % arg,
            "author": arg,
+           "lang": "en",
            "link": 'http://news.ycombinator.com/threads?id=%s' % arg,
            "entries": []}
 
