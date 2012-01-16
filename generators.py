@@ -89,14 +89,14 @@ def twitter_context(arg, lang=None):
    if lang:
       rval["lang"] = lang
 
-   parent_skip_list = []
+   parent_skip_list = set()
    for tweet in tweets:
-      content = []
-
       if tweet['id'] in parent_skip_list:
          continue
 
+      content = []
       tweet_url = "http://twitter.com/%s/status/%s" % (arg, tweet["id_str"])
+
       entry = {"id": tweet_url,
                "title": "%s: " % arg + tweet["text"],
                "content_type": "html",
@@ -114,12 +114,18 @@ def twitter_context(arg, lang=None):
                   tweet_cache[parent_id] = parent_tweet
                except:
                   err(badfetch)
-               if 'error' in parent_tweet:
-                  break
+            # Hitting the API limits mid-feed just leaves you with a half-fleshed out feed
+            # This actually happened to me once
+            if 'error' in parent_tweet:
+               break
 
+            # don't make a new RSS entry for tweets in a conversation chain
             if parent_tweet['user']['id'] == tweet['user']['id']:
-               parent_skip_list.append(parent_tweet["id"])
+               parent_skip_list.add(parent_tweet["id"])
+
             content.append(format_tweet(parent_tweet["user"]["screen_name"], parent_tweet["user"]["name"], parent_tweet["text"], "http://twitter.com/%s/status/%s" % (parent_tweet["user"]["screen_name"], parent_id), parent_tweet["created_at"]))
+
+            # either crawl up the chain to the next parent or break out of this loop, finishing this RSS entry
             if parent_tweet["in_reply_to_status_id"] is not None:
                parent_id = parent_tweet["in_reply_to_status_id_str"]
             else:
