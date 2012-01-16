@@ -60,10 +60,10 @@ def twitter_context(arg):
    ts = lambda x: rfc3339(datetime.datetime.strptime(x, '%a %b %d %H:%M:%S +0000 %Y'))
 
    def format_tweet(username, realname, tweet, tweet_url, time):
-      return  """@%s / %s
-%s
-<a href="%s">%s</a>
-
+      return  """@%s / %s<br/>
+%s<br/>
+<a href="%s">%s</a><br/>
+<br/>
 """ % (username, realname, tweet, tweet_url, time)
 
    try:
