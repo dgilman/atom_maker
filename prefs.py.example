@@ -11,7 +11,8 @@ prefs = {
    "twitter": generators.twitter_noreply,
    "blogspot": generators.blogspot,
    "hn": generators.hackernews_comments,
-   "webkit": generators.webkit
+   "webkit": generators.webkit,
+   "twitcontext": generators.twitter_context
 }
 
 # if your feeds complain about updating this value you need to look at the changelog to find out what to update

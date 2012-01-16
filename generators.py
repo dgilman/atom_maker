@@ -48,6 +48,80 @@ badfetch = "The page couldn't be fetched.  The website might be down."
 #(optional) updated: date (rfc3339) of last update.  if not given uses now
 #(optional) link: entry link
 
+def twitter_context(arg):
+   """arg: twitter username
+   Create a feed giving context to a user's replies."""
+   import json
+   import urllib
+   from util import rfc3339
+   import datetime
+
+   # Unfortunately this is locale dependent.  Fuck twitter's api.
+   ts = lambda x: rfc3339(datetime.datetime.strptime(x, '%a %b %d %H:%M:%S +0000 %Y'))
+
+   def format_tweet(username, realname, tweet, tweet_url, time):
+      return  """@%s / %s
+%s
+<a href="%s">%s</a>
+
+""" % (username, realname, tweet, tweet_url, time)
+
+   try:
+      tweets = json.load(urllib.urlopen("http://api.twitter.com/1/statuses/user_timeline.json?screen_name=%s" % arg), encoding="UTF-8")
+   except:
+      err(badfetch)
+   if "error" in tweets:
+      err(tweets["error"])
+
+   timeline_lookup = {}
+   for tweet in tweets:
+      timeline_lookup[tweet['id_str']] = tweet
+
+   rval = {"id": "atom_maker_twitter_context_%s" % arg,
+           "link": "http://twitter.com/%s" % arg,
+           "title": "Twitter / %s / context" % arg,
+           "author": tweets[0]["user"]["name"],
+           "entries": []}
+
+   parent_skip_list = []
+   for tweet in tweets:
+      content = []
+
+      if tweet['id'] in parent_skip_list:
+         continue
+
+      tweet_url = "http://twitter.com/%s/status/%s" % (arg, tweet["id_str"])
+      entry = {"id": tweet_url,
+               "title": "%s: " % arg + tweet["text"],
+               "content_type": "html",
+               "updated": ts(tweet["created_at"]),
+               "link": tweet_url}
+      content.append(format_tweet(tweet["user"]["screen_name"], tweet["user"]["name"], tweet["text"], tweet_url, tweet["created_at"]))
+      if tweet["in_reply_to_status_id"] is not None:
+         parent_id = tweet["in_reply_to_status_id_str"]
+         while True:
+            if parent_id in timeline_lookup: # don't fetch tweets in the user's timeline
+               parent_tweet = timeline_lookup[parent_id]
+            else:
+               try:
+                  parent_tweet = json.load(urllib.urlopen("http://api.twitter.com/1/statuses/show/%s.json" % parent_id), encoding="UTF-8")
+               except:
+                  err(badfetch)
+               if 'error' in parent_tweet:
+                  break
+
+            if parent_tweet['user']['id'] == tweet['user']['id']:
+               parent_skip_list.append(parent_tweet["id"])
+            content.append(format_tweet(parent_tweet["user"]["screen_name"], parent_tweet["user"]["name"], parent_tweet["text"], "http://twitter.com/%s/status/%s" % (parent_tweet["user"]["screen_name"], parent_id), parent_tweet["created_at"]))
+            if parent_tweet["in_reply_to_status_id"] is not None:
+               parent_id = parent_tweet["in_reply_to_status_id_str"]
+            else:
+               break
+      entry["content"] = "".join(reversed(content))
+      rval["entries"].append(entry)
+   rval["updated"] = rval["entries"][0]["updated"] # first tweet is newest
+   return rval
+
 def blogspot(arg):
    """Some users don't have RSS feeds turned on.  why_would_you_do_that.jpg"""
    from lxml import etree
@@ -84,6 +158,7 @@ def blogspot(arg):
 def twitter_noreply(username):
    """Strips out @replies from a user's twitter feed.
    username is case-sensitive!  It needs to be the same case as the user has on twitter.com"""
+   # At some point https://dev.twitter.com/discussions/2690 will be fixed, making this function unnecessary
    from lxml import etree
    import sys
    import urllib
