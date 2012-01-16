@@ -80,7 +80,7 @@ def twitter_context(arg, lang=None):
    for tweet in tweets:
       timeline_lookup[tweet['id_str']] = tweet
 
-   rval = {"id": "atom_maker_twitter_context_%s" % arg,
+   rval = {"id": "http://twitter.com/%s#atom_maker_context_feed" % arg,
            "link": "http://twitter.com/%s" % arg,
            "title": "Twitter / %s / context" % arg,
            "author": tweets[0]["user"]["name"],
