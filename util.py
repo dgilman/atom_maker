@@ -11,3 +11,7 @@ def create_error_feed(error_msg):
    import sys
    sys.exit()
 
+def self_url():
+   import os
+   from cgi import escape
+   return "http://%s%s" % (os.environ['SERVER_NAME'], escape(os.environ['REQUEST_URI']))

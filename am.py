@@ -32,6 +32,7 @@ now = datetime.datetime.utcnow()
 import generators
 from util import create_error_feed as err
 from util import rfc3339
+from util import self_url
 import schema
 
 def create_atom(feed):
@@ -64,7 +65,7 @@ def create_atom(feed):
    if "link" in feed:
       xml.append('<link href="%s" />' % esc(feed["link"]))
    xml.append('<generator uri="https://github.com/dgilman/atom_maker" version="%s">atom_maker</generator>' % str(VERSION))
-   xml.append('<link rel="self" href="http://%s%s" />' % (os.environ['SERVER_NAME'], esc(os.environ['REQUEST_URI'])))
+   xml.append('<link rel="self" href="%s"/>' % self_url())
 
    #validate individual entries.
 
@@ -163,7 +164,18 @@ def cli():
    if not has_xml:
       print feed
    else:
-      print etree.tostring(etree.fromstring(feed), pretty_print = True, encoding="UTF-8")
+      feed = etree.tostring(etree.fromstring(feed), pretty_print = True, encoding="UTF-8", xml_declaration=True)
+      print feed
+
+   try:
+      import feedvalidator
+      from feedvalidator.formatter.text_plain import Formatter
+      from feedvalidator import compatibility
+      from feedvalidator.logging import ValidValue
+      events = (x for x in feedvalidator.validateString(feed, firstOccurrenceOnly=True, base=self_url())['loggedEvents'] if not isinstance(x, ValidValue))
+      print "\n".join(Formatter(events)).encode("UTF-8")
+   except ImportError:
+      pass
 
 def page():
    args = cgi.parse()
