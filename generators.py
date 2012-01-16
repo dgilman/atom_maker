@@ -76,9 +76,9 @@ def twitter_context(arg, lang=None):
    if "error" in tweets:
       err(tweets["error"])
 
-   timeline_lookup = {}
+   tweet_cache = {}
    for tweet in tweets:
-      timeline_lookup[tweet['id_str']] = tweet
+      tweet_cache[tweet['id_str']] = tweet
 
    rval = {"id": "http://twitter.com/%s#atom_maker_context_feed" % arg,
            "link": "http://twitter.com/%s" % arg,
@@ -106,11 +106,12 @@ def twitter_context(arg, lang=None):
       if tweet["in_reply_to_status_id"] is not None:
          parent_id = tweet["in_reply_to_status_id_str"]
          while True:
-            if parent_id in timeline_lookup: # don't fetch tweets in the user's timeline
-               parent_tweet = timeline_lookup[parent_id]
+            if parent_id in tweet_cache:
+               parent_tweet = tweet_cache[parent_id]
             else:
                try:
                   parent_tweet = json.load(urllib.urlopen("http://api.twitter.com/1/statuses/show/%s.json" % parent_id), encoding="UTF-8")
+                  tweet_cache[parent_id] = parent_tweet
                except:
                   err(badfetch)
                if 'error' in parent_tweet:
