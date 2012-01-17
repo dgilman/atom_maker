@@ -16,4 +16,4 @@ prefs = {
 }
 
 # if your feeds complain about updating this value you need to look at the changelog to find out what to update
-version = 3
+version = 4

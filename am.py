@@ -24,7 +24,7 @@ import cgi
 import datetime
 import sqlite3
 
-VERSION = 3
+VERSION = 4
 cache_length = datetime.timedelta(hours=6)
 now = datetime.datetime.utcnow()
 
@@ -129,22 +129,48 @@ def get_feed_generator(name):
    except:
       err("Generator name not in prefs file.")
 
-def get_feed(name):
+def get_feed(args):
    """Get the entry for name from prefs and run the appropriate generator.
    Return the generated dict."""
-   generator_name, underscore, generator_args = name.partition("_")
-   generator = get_feed_generator(generator_name)
-   return generator(generator_args)
+   generator = get_feed_generator(args["qs"]["gen"])
+   return generator(args)
+
+def parse_qs(qs):
+   if "flush" in qs:
+      del(qs["flush"])
+   rval = {"qs": {}}
+   if 'feed' in qs: # old-style
+      qs["feed"] = qs["feed"][0].decode("UTF-8")
+      rval["cache_key"] = qs["feed"]
+      feed_bits = qs['feed'].partition("_")
+      rval["qs"]["gen"] = feed_bits[0]
+      rval["qs"]["arg"] = feed_bits[2]
+   elif "gen" in qs and "arg" in qs:
+      for k,v in qs.iteritems():
+         qs[k] = v[0].decode("UTF-8")
+      additional_args = filter(lambda x: x != "gen" and x != "arg", qs.keys())
+      rval["qs"] = qs
+      rval["cache_key"] = "_".join([qs["gen"], qs["arg"]])
+      if len(additional_args) != 0:
+         rval["cache_key"] += "_"
+         rval["cache_key"] += "_".join([x + "_" + qs[x] for x in additional_args])
+   else:
+      print qs
+      err("Your query string is incomplete.")
+   return rval
 
 def feed_cache(qs, flush=False):
    conn = sqlite3.connect("cache.sqlite3", detect_types=sqlite3.PARSE_DECLTYPES)
    c = conn.cursor()
    schema.check(c)
 
-   cache = c.execute("select ts, feed from cache where qs = ?", (qs,)).fetchall()
+   args = parse_qs(qs)
+   args["cursor"] = c
+
+   cache = c.execute("select ts, feed from cache where qs = ?", (args["cache_key"],)).fetchall()
    if len(cache) == 0 or (now - cache[0][0] > cache_length) or flush:
-      rval = create_atom(get_feed(qs))
-      c.execute("replace into cache values (?, ?, ?)", (qs, now, rval))
+      rval = create_atom(get_feed(args))
+      c.execute("replace into cache values (?, ?, ?)", (args["cache_key"], now, rval))
       conn.commit()
    else:
       rval = cache[0][1]
@@ -156,16 +182,23 @@ def cli():
       print "Give the name of a feed to generate"
       sys.exit()
 
+   # hack to support old-style from cmd line
+   if "&" not in sys.argv[1]:
+      sys.argv[1] = "feed=%s" % sys.argv[1]
+
    os.environ['SERVER_NAME'] = "cli/"
    os.environ['REQUEST_URI'] = sys.argv[1]
+   os.environ['QUERY_STRING'] = sys.argv[1]
+
+   args = cgi.parse()
+
+   feed = feed_cache(args, flush=True).encode('UTF-8')
 
    has_xml = True
    try:
       import lxml.etree as etree
    except:
       has_xml = False
-
-   feed = feed_cache(sys.argv[1].decode('UTF-8'), flush=True).encode('UTF-8')
 
    if not has_xml:
       print feed
@@ -189,11 +222,9 @@ def page():
 
    print "Content-Type: application/atom+xml;charset=UTF-8"
    print ""
-   if not "feed" in args:
-      err("Feed requested must be in the query string (am.py?feed=foo).")
    if "flush" in args:
       flush = True
-   print feed_cache(args["feed"][0].decode('UTF-8'), flush).encode('UTF-8')
+   print feed_cache(args, flush).encode('UTF-8')
 
 if __name__ == "__main__":
    if 'REQUEST_METHOD' in os.environ and os.environ['REQUEST_METHOD'] == 'GET':

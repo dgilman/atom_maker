@@ -50,7 +50,7 @@ badfetch = "The page couldn't be fetched.  The website might be down."
 #(optional) link: entry link
 #(optional) lang: xml:lang attribute value for this entry.
 
-def twitter_context(arg, lang=None):
+def twitter_context(arg):
    """arg: twitter username
    lang: optional xml:lang human language for content
    Create a feed giving context to a user's replies."""
@@ -69,8 +69,10 @@ def twitter_context(arg, lang=None):
 <br/>
 """ % (username, realname, tweet, tweet_url, time)
 
+   uname = arg["qs"]["arg"]
+
    try:
-      tweets = json.load(urllib.urlopen("http://api.twitter.com/1/statuses/user_timeline.json?screen_name=%s" % arg), encoding="UTF-8")
+      tweets = json.load(urllib.urlopen("http://api.twitter.com/1/statuses/user_timeline.json?screen_name=%s" % uname), encoding="UTF-8")
    except:
       err(badfetch)
    if "error" in tweets:
@@ -80,14 +82,14 @@ def twitter_context(arg, lang=None):
    for tweet in tweets:
       tweet_cache[tweet['id_str']] = tweet
 
-   rval = {"id": "http://twitter.com/%s#atom_maker_context_feed" % arg,
-           "link": "http://twitter.com/%s" % arg,
-           "title": "Twitter / %s / context" % arg,
+   rval = {"id": "http://twitter.com/%s#atom_maker_context_feed" % uname,
+           "link": "http://twitter.com/%s" % uname,
+           "title": "Twitter / %s / context" % uname,
            "author": tweets[0]["user"]["name"],
            "entries": []}
 
-   if lang:
-      rval["lang"] = lang
+   if 'lang' in arg["qs"]:
+      rval["lang"] = arg["qs"]['lang']
 
    parent_skip_list = set()
    for tweet in tweets:
@@ -95,10 +97,10 @@ def twitter_context(arg, lang=None):
          continue
 
       content = []
-      tweet_url = "http://twitter.com/%s/status/%s" % (arg, tweet["id_str"])
+      tweet_url = "http://twitter.com/%s/status/%s" % (uname, tweet["id_str"])
 
       entry = {"id": tweet_url,
-               "title": "%s: " % arg + tweet["text"],
+               "title": "%s: " % uname + tweet["text"],
                "content_type": "html",
                "updated": ts(tweet["created_at"]),
                "link": tweet_url}
@@ -135,11 +137,11 @@ def twitter_context(arg, lang=None):
    rval["updated"] = rval["entries"][0]["updated"] # first tweet is newest
    return rval
 
-def blogspot(arg, lang=None):
+def blogspot(arg):
    """Some users don't have RSS feeds turned on.  why_would_you_do_that.jpg"""
    from lxml import etree
 
-   url = 'http://%s.blogspot.com' % arg
+   url = 'http://%s.blogspot.com/' % arg["qs"]["arg"].replace("/#&", "")
    try:
       t = etree.parse(url, etree.HTMLParser(encoding="UTF-8"))
    except:
@@ -153,8 +155,8 @@ def blogspot(arg, lang=None):
            "title": t.xpath('//title')[0].text,
            "entries": []}
 
-   if lang:
-      rval["lang"] = lang
+   if "lang" in arg["qs"]:
+      rval["lang"] = arg["qs"]["lang"]
 
    for post in posts:
       ts = post.xpath('descendant::abbr[@class="published"]')[0].attrib["title"]
@@ -171,13 +173,15 @@ def blogspot(arg, lang=None):
    rval["updated"] = rval["entries"][0]["updated"] #assume the first entry is the newest
    return rval
 
-def twitter_noreply(username):
+def twitter_noreply(arg):
    """Strips out @replies from a user's twitter feed.
    username is case-sensitive!  It needs to be the same case as the user has on twitter.com"""
    # At some point https://dev.twitter.com/discussions/2690 will be fixed, making this function unnecessary
    from lxml import etree
    import sys
    import urllib
+
+   username = arg["qs"]["arg"]
 
    try:
       uid = urllib.urlopen("http://www.idfromuser.com/getID.php?username=%s" % username).readlines()[0]
@@ -204,16 +208,20 @@ def twitter_noreply(username):
 
 # _bz_screenscrape supports all of bugzilla 3 and 4 but lacks the history features
 
-def redhat_sources_bz(arg, history=True, ccs=False):
-   return _bz_xmlrpc(arg, 'http://sourceware.org/bugzilla', history, ccs, lang="en")
+def redhat_sources_bz(arg):
+   arg["url"] = 'http://sourceware.org/bugzilla'
+   return _bz_xmlrpc(arg)
 
-def bmo(arg, history=True, ccs=False):
-   return _bz_xmlrpc(arg, 'https://bugzilla.mozilla.org', history, ccs, lang="en")
+def bmo(arg):
+   arg["url"] = 'https://bugzilla.mozilla.org'
+   return _bz_xmlrpc(arg)
 
 def webkit(arg):
-   return _bz_screenscrape(arg, 'https://bugs.webkit.org', 3, lang="en")
+   arg["url"] = 'https://bugs.webkit.org'
+   arg["version"] = 3
+   return _bz_screenscrape(arg)
 
-def _bz_xmlrpc(arg, url, history=True, ccs=False, lang=None):
+def _bz_xmlrpc(arg):
    """arg: bug id as string
    url: path to bugzilla installation
    history: put history changes in feed (optional, default true)
@@ -224,10 +232,33 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False, lang=None):
    now = datetime.datetime.utcnow()
    from util import rfc3339
 
+   try:
+      int(arg['qs']['arg'])
+   except:
+      err("Bug IDs must be numerical.")
+
+   if not "history" in arg["qs"]: # the default
+      history = True
+   else:
+      if arg["qs"]["history"][0] in "Ff0":
+         history = False
+      else:
+         history = True
+
+   if not "ccs" in arg["qs"]:
+      ccs = False
+   else:
+      if arg["qs"]["ccs"][0] in "Ff0":
+         ccs = False
+      else:
+         ccs = True
+
+   url = arg["url"]
+   bugid = arg["qs"]["arg"]
    p = xmlrpclib.ServerProxy(url + "/xmlrpc.cgi", use_datetime=True)
 
    try:
-      bugdata = p.Bug.get({"ids":[arg], "permissive": True})
+      bugdata = p.Bug.get({"ids":[bugid], "permissive": True})
    except:
       err(badfetch)
    if len(bugdata['faults']) > 0: err(bugdata['faults'][0]['faultString'])
@@ -237,27 +268,26 @@ def _bz_xmlrpc(arg, url, history=True, ccs=False, lang=None):
    rval = {"id": guid,
            "link": guid,
            "updated": rfc3339(bugdata['last_change_time']),
-           "title": "Bug %s - " % arg + bugdata['summary'],
+           "title": "Bug %s - " % bugid + bugdata['summary'],
            "entries": []}
 
-   if lang:
-      rval["lang"] = lang
+   if "lang" in  arg["qs"]:
+      rval["lang"] = arg["qs"]["lang"]
 
    try:
-      bugcomments = p.Bug.comments({"ids":[arg]})["bugs"][arg]['comments']
+      bugcomments = p.Bug.comments({"ids":[bugid]})["bugs"][bugid]['comments']
    except:
       err(badfetch)
 
    commenting_users = [x['author'] for x in bugcomments]
    if history:
       try:
-         bug_history = p.Bug.history({"ids":[arg]})['bugs'][0]['history']
+         bug_history = p.Bug.history({"ids":[bugid]})['bugs'][0]['history']
       except:
          err(badfetch)
       commenting_users.extend([h['who'] for h in bug_history])
 
-   conn = sqlite3.connect("cache.sqlite3")
-   c = conn.cursor()
+   c = arg["cursor"]
    c.executescript("""pragma temp_store = MEMORY;
 create temp table email_queries (email text unique);""")
    c.execute("insert or ignore into bugzillas (id, url) values (NULL, ?)", (url,))
@@ -326,43 +356,49 @@ create temp table email_queries (email text unique);""")
                "link": comment_id}
       rval["entries"].append(entry)
 
-   # finally done with the db
-   conn.commit()
-   conn.close()
-
    rval["entries"].sort(key=lambda e: e["published"])
    for entry in rval["entries"]:
       entry["published"] = rfc3339(entry["published"])
 
    return rval
 
-def _bz_screenscrape(arg, url, bz_version, lang=None):
+def _bz_screenscrape(arg): #, url, bz_version, lang=None):
    """arg: bug id as string
    url: path to bugzilla installation without slash
    bz_version: integer 3 or 4 corresponding to the installation version"""
    #TODO: not assume everyone's in PST
    from lxml import etree
    import urllib #bugzilla.mozilla.org forces https which libxml2 balks at
-   base_url = url
-   url = '%s/show_bug.cgi?id=%s' % (url, arg)
+
+   try:
+      int(arg["qs"]["arg"])
+   except:
+      err("Bug IDs must be numerical.")
+
+   base_url = arg["url"]
+   bugid = arg["qs"]["arg"]
+   url = '%s/show_bug.cgi?id=%s' % (base_url, bugid)
    rval = {"id": url,
            "link": url,
            "entries": []}
-   if lang:
-      rval["lang"] = lang
+   if "lang" in arg["qs"]:
+      rval["lang"] = arg["qs"]["lang"]
+
    try:
       tree = etree.parse(urllib.urlopen(url), etree.HTMLParser(encoding="UTF-8"))
    except:
       err(badfetch)
+
    comments = tree.xpath("//div[contains(@class, 'bz_comment')]")
    if len(comments) == 0: err(badparse)
+
    rval["title"] = tree.xpath('/html/head/title')[0].text
 
    for e in tree.xpath('//pre[@class="bz_comment_text"]'):
       e.attrib["style"] = "white-space:pre-wrap"
 
    for comment in comments:
-      if bz_version == 4:
+      if arg["version"] == 4:
          link = url + "#" + comment.attrib['id']
          time = comment.xpath("div/span[@class='bz_comment_time']")[0].text.strip("\n ")
          timebits = time.split()
@@ -375,7 +411,7 @@ def _bz_screenscrape(arg, url, bz_version, lang=None):
          title = "Comment %s - %s - %s" % (comment.attrib["id"][1:], name, time)
          content = etree.tostring(comment.xpath("pre[@class='bz_comment_text']")[0])
 
-      if bz_version == 3:
+      if arg["version"] == 3:
          link = base_url + "/" + comment.xpath("span/i/a")[0].attrib['href']
          time = comment.xpath("span/i/span")[0].tail.strip("\n ")
          timebits = time.split()
@@ -399,9 +435,10 @@ def _bz_screenscrape(arg, url, bz_version, lang=None):
 def gelbooru(arg):
    """Gets the latest posts for a given tag query.  Arg is the query"""
    from lxml import etree
-   url = 'http://gelbooru.com/index.php?page=post&s=list&tags=%s' % arg
+   tag = arg["qs"]["arg"]
+   url = 'http://gelbooru.com/index.php?page=post&s=list&tags=%s' % tag
    rval = {"id": url,
-           "title": "%s - Gelbooru" % arg,
+           "title": "%s - Gelbooru" % tag,
            "author": "Gelbooru",
            "link": url,
            "lang": "en",
@@ -429,11 +466,13 @@ def gelbooru(arg):
 
 def hackernews_comments(arg):
    """Gets the comments of a hacker news user.  arg is a string (the username)"""
-   rval = {"id": 'http://news.ycombinator.com/threads?id=%s' % arg,
-           "title": "%s's comments - Hacker News" % arg,
-           "author": arg,
+   username = arg["qs"]["arg"]
+   userpage = 'http://news.ycombinator.com/threads?id=%s' % username
+   rval = {"id": userpage,
+           "title": "%s's comments - Hacker News" % username,
+           "author": username,
            "lang": "en",
-           "link": 'http://news.ycombinator.com/threads?id=%s' % arg,
+           "link": userpage,
            "entries": []}
 
    from lxml import etree
@@ -442,10 +481,10 @@ def hackernews_comments(arg):
    post = lambda e: etree.tostring(list(e.xpath('span[1]')[0])[0], encoding='UTF-8') #get rid of <span class="comment">
 
    try:
-      tree = etree.parse('http://news.ycombinator.com/threads?id=%s' % arg, etree.HTMLParser(encoding="UTF-8"))
+      tree = etree.parse('http://news.ycombinator.com/threads?id=%s' % username, etree.HTMLParser(encoding="UTF-8"))
    except:
       err(badfetch)
-   user_comments = tree.xpath('/html/body/center/table/tr/td/table/tr/td[div/span/a = "%s"]' % arg)
+   user_comments = tree.xpath('/html/body/center/table/tr/td/table/tr/td[div/span/a = "%s"]' % username)
    if len(user_comments) == 0: err(badparse)
 
    links = [link(e) for e in user_comments]
@@ -455,9 +494,8 @@ def hackernews_comments(arg):
    for comment in zip(links, posts):
       entry = {"id": comment[0],
                "link": comment[0],
-               "title": "%s's comment" % arg,
+               "title": "%s's comment" % username,
                "content": comment[1].decode('UTF-8'),
                "content_type": "html"}
       rval["entries"].append(entry)
-
    return rval
