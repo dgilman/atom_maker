@@ -105,33 +105,29 @@ def twitter_context(arg):
                "updated": ts(tweet["created_at"]),
                "link": tweet_url}
       content.append(format_tweet(tweet["user"]["screen_name"], tweet["user"]["name"], tweet["text"], tweet_url, tweet["created_at"]))
-      if tweet["in_reply_to_status_id"] is not None:
-         parent_id = tweet["in_reply_to_status_id_str"]
-         while True:
-            if parent_id in tweet_cache:
-               parent_tweet = tweet_cache[parent_id]
-            else:
-               try:
-                  parent_tweet = json.load(urllib.urlopen("http://api.twitter.com/1/statuses/show/%s.json" % parent_id), encoding="UTF-8")
-                  tweet_cache[parent_id] = parent_tweet
-               except:
-                  err(badfetch)
-            # Hitting the API limits mid-feed just leaves you with a half-fleshed out feed
-            # This actually happened to me once
-            if 'error' in parent_tweet:
-               break
+      parent_id = tweet["in_reply_to_status_id_str"]
+      while parent_id is not None:
+         if parent_id in tweet_cache:
+            parent_tweet = tweet_cache[parent_id]
+         else:
+            try:
+               parent_tweet = json.load(urllib.urlopen("http://api.twitter.com/1/statuses/show/%s.json" % parent_id), encoding="UTF-8")
+               tweet_cache[parent_id] = parent_tweet
+            except:
+               err(badfetch)
+         # Hitting the API limits mid-feed just leaves you with a half-fleshed out feed
+         # This actually happened to me once
+         if 'error' in parent_tweet:
+            break
 
-            # don't make a new RSS entry for tweets in a conversation chain
-            if parent_tweet['user']['id'] == tweet['user']['id']:
-               parent_skip_list.add(parent_tweet["id"])
+         # don't make a new RSS entry for tweets in a conversation chain
+         if parent_tweet['user']['id'] == tweet['user']['id']:
+            parent_skip_list.add(parent_tweet["id"])
 
-            content.append(format_tweet(parent_tweet["user"]["screen_name"], parent_tweet["user"]["name"], parent_tweet["text"], "http://twitter.com/%s/status/%s" % (parent_tweet["user"]["screen_name"], parent_id), parent_tweet["created_at"]))
+         content.append(format_tweet(parent_tweet["user"]["screen_name"], parent_tweet["user"]["name"], parent_tweet["text"], "http://twitter.com/%s/status/%s" % (parent_tweet["user"]["screen_name"], parent_id), parent_tweet["created_at"]))
 
-            # either crawl up the chain to the next parent or break out of this loop, finishing this RSS entry
-            if parent_tweet["in_reply_to_status_id"] is not None:
-               parent_id = parent_tweet["in_reply_to_status_id_str"]
-            else:
-               break
+         # continue to next parent or terminate
+         parent_id = parent_tweet["in_reply_to_status_id_str"]
       entry["content"] = "".join(reversed(content))
       rval["entries"].append(entry)
    rval["updated"] = rval["entries"][0]["updated"] # first tweet is newest
