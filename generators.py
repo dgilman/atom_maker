@@ -216,15 +216,18 @@ def twitter_noreply(arg):
 
 def redhat_sources_bz(arg):
    arg["url"] = 'http://sourceware.org/bugzilla'
+   arg["qs"]["lang"] = "en"
    return _bz_xmlrpc(arg)
 
 def bmo(arg):
    arg["url"] = 'https://bugzilla.mozilla.org'
+   arg["qs"]["lang"] = "en"
    return _bz_xmlrpc(arg)
 
 def webkit(arg):
    arg["url"] = 'https://bugs.webkit.org'
    arg["version"] = 3
+   arg["qs"]["lang"] = "en"
    return _bz_screenscrape(arg)
 
 def _bz_xmlrpc(arg):
