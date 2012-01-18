@@ -1,0 +1,66 @@
+Generator function name: hackernews_comments
+Purpose: feed of a HN user's comments
+Dependencies: lxml (http://lxml.de/)
+Default "gen" value: hn
+Primary argument (arg): the username you want to follow
+
+Generator function name: gelbooru
+Purpose: feed of a Gelbooru tag search
+Dependencies: lxml (http://lxml.de/)
+Default "gen" value: gel
+Primary argument (arg): urlencoded gelbooru tag search
+
+Generator function name: redhat_sources_bz
+Purpose: Bugzilla bug updates from sourceware.org/bugzilla
+Default "gen" value: rh
+Primary argument (arg): bug ID
+Other arguments:
+   history: Show bug field change history inline.  Defaults to true.
+   ccs: Show cc changes in the history.  Defaults to false.
+
+Generator function name: bmo
+Purpose: Bugzilla bug updates from bugzilla.mozilla.org
+Default "gen" value: bmo
+Primary argument (arg): bug ID
+Other arguments:
+   history: Show bug field change history inline.  Defaults to true.
+   ccs: Show cc changes in the history.  Defaults to false.
+
+Generator function name: webkit
+Purpose: Bugzilla bug updates from bugs.webkit.org
+Dependencies: lxml
+Default "gen" value: webkit
+Primary argument (arg): bug ID
+Other arguments:
+   history: Show bug field change history inline.  Defaults to true.
+   ccs: Show cc changes in the history.  Defaults to false.
+
+Generator function name: twitter_noreply
+Purpose: Strips out @replies from a Twitter user timeline
+Dependencies: lxml
+Default "gen" value: twitter
+Primary argument (arg): twitter username (case-sensitive)
+Note: this function is just a stopgap until https://dev.twitter.com/discussions/2690 is fixed.
+
+Generator function name: blogspot
+Purpose: Generate a feed of new posts on a blogspo blog
+Dependencies: lxml
+Default "gen" value: blogspot
+Primary argument (arg): blog name (foo.blogspot.com)
+Other arguments:
+   lang: human language of the feed's content
+
+Generator function name: twitter_context
+Purpose: Show a user's twitter timeline with inline context for @replies
+Default "gen" value: twitcontext
+Primary argument (arg): twitter username
+Other arguments:
+   lang: human language of the feed's contents
+
+Generator function name: 
+Purpose: 
+Dependencies: 
+Default "gen" value: 
+Primary argument (arg): 
+
+

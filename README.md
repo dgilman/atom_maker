@@ -1,10 +1,17 @@
-Deps: lxml (python-lxml in debian)
+Deps: python 2.6.  Some generators have their own special dependencies, see genoptions.txt for more info.  lxml (http://lxml.de/) is needed for many.
 
-atom_maker generates Atom feeds out of pages that do not have them.  It comes out of the box with code for Hacker News comments, Gelbooru tag searches, Bugzilla bugs, Blogspot blogs and special Twitter feed code to strip away @replies.  Implementing code for a new site is easy.
+atom_maker generates Atom feeds out of pages that do not have them.  It comes out of the box with code for Hacker News comments, Gelbooru tag searches, Bugzilla bugs, Blogspot blogs and special Twitter feed code to either provide context for @replies or strip them away.  Implementing code for a new site is easy.
 
-Setup
------
-Take a look at generators.py to see what sites are available and what arguments the code takes.  Configure your feeds in prefs.py and browse to am.py to see your new feed!  Most users can get away with copying prefs.py.example over.
+Quick start
+-----------
+1. Copy prefs.py.example to prefs.py
+2. Find what generator (backend) you want to use in prefs.py.  (example: bmo for bugzilla.mozilla.org)
+3. Browse to am.py with the appropriate query string (example: am.py?gen=bmo&arg=700000&lang=en)
+3a. If your generator only uses one argument (usually "arg" in the query string) you can use the "old-style" URL as a shortcut.  (example: am.py?feed=bmo_700000)
+
+Fancy configuration
+-------------------
+The top of prefs.py.example explains how you can configure your generators beforehand by writing short functions.  There's documentation available for all the generators in genoptions.txt.
 
 Creating a new generator
 ------------------------

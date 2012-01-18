@@ -21,35 +21,45 @@ badparse = "The page couldn't be parsed properly.  It's likely that the page's m
 badfetch = "The page couldn't be fetched.  The website might be down."
 noarg = "This generator has a mandatory primary argument (arg).  You need to include one in your query."
 
-#generator spec:
+# Generator function spec:
 
-#you must have an author field in the overall feed or an author field for all entries.
-#THIS IS ENFORCED.
+# arg:
+# All generators are called with a single dict.  It will always have the following keys:
+# "cursor": cursor object to the sqlite3 cache database.  Please try and avoid writing to the "cache" table and please upstream your schema to avoid conflicts.
+# "qs": a dict of the query string args.
+#     "gen": the key in prefs.py that called your generator.
+#     (optional) "arg": This is called the primary argument.  It is specified with "arg" in the query string.
+#         Use this for the primary value of configuration (for example the username of a twitter timeline).
 
-#return a dict with the following fields:
+
+# rval:
+# All generators must return a dict with the following keys:
+
+# You must have an author field in the overall feed or an author field for all entries.
+# THIS IS ENFORCED.
+
+# id: Permalink.  Atom spec says it must be a URL.
+# title: the title
+# (optional) author: The author's name.  See note above about the author field
+# (optional) author_uri: optional link to a page for the author
+# (optional) updated: A string of the date (rfc3339) of last update.  If this is not given the current time will be used.
+# (optional) subtitle: A description of the feed.
+# (optional) link: A link to the corresponding page for the feed.
+# (optional) lang: An xml:lang attribute value for the entire feed.
+# entries: list of dicts of entries (described below)
+
+# entries:
 #
-#id: permalink url
-#title: derp
-#(optional) author: see note above
-#(optional) author_uri: optional link to a page for the author
-#(optional) updated: date (rfc3339) of last update.  if not given uses now
-#(optional) subtitle: description
-#(optional) link: page link
-#(optional) lang: xml:lang attribute value for the entire feed.
-#entries: list of dicts of entries (described below)
-
-#entries:
-#
-#id: entry permalink
-#title: derp
-#content: body of story
-#content_type: one of text, html, xhtml
-#(optional) author: see note above
-#(optional) author_uri: optional link to a page for the author
-#(optional) published: rfc3339 string of publishing date
-#(optional) updated: date (rfc3339) of last update.  if not given uses now
-#(optional) link: entry link
-#(optional) lang: xml:lang attribute value for this entry.
+# id: A permalink to the entry.  If you don't make this consistent across runs feed readers will be confused.  The atom spec demands that this be a URL.
+# title: the title
+# content: Body of story
+# content_type: one of text, html, xhtml
+# (optional) author: The name of the author of the post.  See the above note
+# (optional) author_uri: optional link to a page for the author
+# (optional) published: string (rfc3339) of publishing date
+# (optional) updated: string of the date (rfc3339) of last update.  if not given uses now
+# (optional) link: Link to the entry.
+# (optional) lang: xml:lang attribute value for this entry.
 
 def twitter_context(arg):
    """arg: twitter username

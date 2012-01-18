@@ -1,8 +1,18 @@
-# prefs is a dict of generator functions
-# the part of the request before the underscore (bmo in the case of bmo_123456) will be the key
-# if you need to modify the args as they come in you can write a decorator here
+# prefs is a dict of functions
+# The key is the value of "gen" in the query string.
+# The function can just be a direct call to one of the generators in generators.py.
+# If you need to configure things further you can write a function here.  See dgilman_twitter for an example.
+
 
 import generators
+
+def dgilman_twitter(arg):
+   """Example custom generator.  It passes a special primary argument (qs["arg"]) down to the function to shorten the query string for you.  You shouldn't need to write a function like this most of the time but the option is still available.
+
+Note that this is a contrived example: all of the configuration done here could be achieved with a query string of gen=twitcontext&arg=dgilman&lang=en"""
+   arg["qs"]["lang"] = "en"
+   arg["qs"]["arg"] = "dgilman"
+   return generators.twitter_context(arg)
 
 prefs = {
    "bmo": generators.bmo,
@@ -12,8 +22,9 @@ prefs = {
    "blogspot": generators.blogspot,
    "hn": generators.hackernews_comments,
    "webkit": generators.webkit,
-   "twitcontext": generators.twitter_context
+   "twitcontext": generators.twitter_context,
+   "dgilman": dgilman_twitter
 }
 
-# if your feeds complain about updating this value you need to look at the changelog to find out what to update
+# if your feeds complain about updating this value you need to look at the changelog to find out what to change
 version = 4
