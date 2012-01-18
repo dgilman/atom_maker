@@ -19,6 +19,7 @@
 from util import create_error_feed as err
 badparse = "The page couldn't be parsed properly.  It's likely that the page's markup has changed and your atom_maker needs to be updated."
 badfetch = "The page couldn't be fetched.  The website might be down."
+noarg = "This generator has a mandatory primary argument (arg).  You need to include one in your query."
 
 #generator spec:
 
@@ -69,7 +70,10 @@ def twitter_context(arg):
 <br/>
 """ % (username, realname, tweet, tweet_url, time)
 
-   uname = arg["qs"]["arg"]
+   if "arg" in arg["qs"]:
+      uname = arg["qs"]["arg"]
+   else:
+      err(noarg)
 
    try:
       tweets = json.load(urllib.urlopen("http://api.twitter.com/1/statuses/user_timeline.json?screen_name=%s" % uname), encoding="UTF-8")
@@ -137,6 +141,9 @@ def blogspot(arg):
    """Some users don't have RSS feeds turned on.  why_would_you_do_that.jpg"""
    from lxml import etree
 
+   if "arg" not in arg["qs"]:
+      err(noarg)
+
    url = 'http://%s.blogspot.com/' % arg["qs"]["arg"].replace("/#&", "")
    try:
       t = etree.parse(url, etree.HTMLParser(encoding="UTF-8"))
@@ -177,7 +184,10 @@ def twitter_noreply(arg):
    import sys
    import urllib
 
-   username = arg["qs"]["arg"]
+   if "arg" in arg["qs"]:
+      username = arg["qs"]["arg"]
+   else:
+      err(noarg)
 
    try:
       uid = urllib.urlopen("http://www.idfromuser.com/getID.php?username=%s" % username).readlines()[0]
@@ -227,6 +237,9 @@ def _bz_xmlrpc(arg):
    import datetime
    now = datetime.datetime.utcnow()
    from util import rfc3339
+
+   if "arg" not in arg["qs"]:
+      err(noarg)
 
    try:
       int(arg['qs']['arg'])
@@ -366,6 +379,9 @@ def _bz_screenscrape(arg): #, url, bz_version, lang=None):
    from lxml import etree
    import urllib #bugzilla.mozilla.org forces https which libxml2 balks at
 
+   if "arg" not in arg["qs"]:
+      err(noarg)
+
    try:
       int(arg["qs"]["arg"])
    except:
@@ -431,6 +447,10 @@ def _bz_screenscrape(arg): #, url, bz_version, lang=None):
 def gelbooru(arg):
    """Gets the latest posts for a given tag query.  Arg is the query"""
    from lxml import etree
+
+   if "arg" not in arg["qs"]:
+      err(noarg)
+
    tag = arg["qs"]["arg"]
    url = 'http://gelbooru.com/index.php?page=post&s=list&tags=%s' % tag
    rval = {"id": url,
@@ -462,7 +482,11 @@ def gelbooru(arg):
 
 def hackernews_comments(arg):
    """Gets the comments of a hacker news user.  arg is a string (the username)"""
-   username = arg["qs"]["arg"]
+
+   if "arg" not in arg["qs"]:
+      err(noarg)
+   else:
+      username = arg["qs"]["arg"]
    userpage = 'http://news.ycombinator.com/threads?id=%s' % username
    rval = {"id": userpage,
            "title": "%s's comments - Hacker News" % username,

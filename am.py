@@ -145,17 +145,19 @@ def parse_qs(qs):
       feed_bits = qs['feed'].partition("_")
       rval["qs"]["gen"] = feed_bits[0]
       rval["qs"]["arg"] = feed_bits[2]
-   elif "gen" in qs and "arg" in qs:
+   elif "gen" in qs:
       for k,v in qs.iteritems():
          qs[k] = v[0].decode("UTF-8")
-      additional_args = filter(lambda x: x != "gen" and x != "arg", qs.keys())
       rval["qs"] = qs
-      rval["cache_key"] = "_".join([qs["gen"], qs["arg"]])
+      additional_args = filter(lambda x: x != "gen" and x != "arg", qs.keys())
+      if "arg" in qs:
+         rval["cache_key"] = qs["gen"] + "_" + qs["arg"]
+      else:
+         rval["cache_key"] = qs["gen"]
       if len(additional_args) != 0:
          rval["cache_key"] += "_"
          rval["cache_key"] += "_".join([x + "_" + qs[x] for x in additional_args])
    else:
-      print qs
       err("Your query string is incomplete.")
    return rval
 
