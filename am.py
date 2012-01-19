@@ -43,7 +43,7 @@ def create_atom(feed):
 
    ts = rfc3339(now)
 
-   if not feed:
+   if not isinstance(feed, dict):
       err("Your generator forgot to return a dict.")
    if not "title" in feed:
       err("The feed lacks a title.")

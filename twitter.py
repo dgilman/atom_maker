@@ -47,20 +47,21 @@ def fake_object(tweet): # The car's on fire and there's no driver at the wheel
 class TwitterProxy:
    def __init__(self, db=None, oauth=False, token_name=None):
       self.oauth = oauth
-      if self.oauth:
-         if db == None:
-            err("OAuth needs the DB cursor")
-         import tweepy
-         try:
-            self.token = db.execute("select key, secret from twitter_tokens where name = ?", (token_name,)).fetchall()[0]
-         except:
-            err("Your twitter tokens are nowhere to be found.  Try running get_twitter_tokens.py")
-         # unbreakable encryption
-         self.handler = tweepy.auth.OAuthHandler('Ab0dCwvGliqZDE167mg9Xu'[::-1], '4ATKOElWbkwxfuVIsI8LwJWXu2MuzDZqv2VK8eE1'[::-1], secure=True)
-         self.handler.set_access_token(self.token[0], self.token[1])
-         self.api = tweepy.API(self.handler)
-         if not self.api.test():
-            err("Couldn't get the twitter tokens to work.")
+      if not self.oauth:
+         return
+      if db == None:
+         err("OAuth needs the DB cursor")
+      import tweepy
+      try:
+         self.token = db.execute("select key, secret from twitter_tokens where name = ?", (token_name,)).fetchall()[0]
+      except:
+         err("Your twitter tokens are nowhere to be found.  Try running get_twitter_tokens.py")
+      # unbreakable encryption
+      self.handler = tweepy.auth.OAuthHandler('Ab0dCwvGliqZDE167mg9Xu'[::-1], '4ATKOElWbkwxfuVIsI8LwJWXu2MuzDZqv2VK8eE1'[::-1], secure=True)
+      self.handler.set_access_token(self.token[0], self.token[1])
+      self.api = tweepy.API(self.handler)
+      if not self.api.test():
+         err("Couldn't get the twitter tokens to work.")
 
    def user_timeline(self, username):
       if self.oauth:
@@ -101,3 +102,8 @@ class TwitterProxy:
       if not self.oauth:
          err("user_mentions requires OAuth")
       return self.api.mentions(count=40, include_rts=True)
+
+   def me(self):
+      if not self.oauth:
+         err("This function is only implemented for OAuth at the moment.  If you want it for non-authenticated queries open a bug.")
+      return self.api.me()

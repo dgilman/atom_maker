@@ -70,13 +70,12 @@ def twitter_context(arg):
    import twitter
    from twitter import format_tweet
 
-   if "arg" in arg["qs"]:
-      uname = arg["qs"]["arg"]
-   else:
-      err(noarg)
 
    if "oauth" not in arg:
       arg["oauth"] = False
+
+   if "arg" not in arg["qs"] and arg["oauth"] == False:
+      err(noarg)
 
    if "token_name" not in arg:
       arg["token_name"] = None
@@ -85,7 +84,9 @@ def twitter_context(arg):
 
    if "mentions" in arg and arg["mentions"] == True:
       tweets = p.mentions()
+      uname = p.me().screen_name
    else:
+      uname = arg["qs"]["arg"]
       tweets = p.user_timeline(uname)
 
    tweet_cache = {}
@@ -107,10 +108,10 @@ def twitter_context(arg):
          continue
 
       content = []
-      tweet_url = "http://twitter.com/%s/status/%s" % (uname, tweet.id_str)
+      tweet_url = "http://twitter.com/%s/status/%s" % (tweet.user.screen_name, tweet.id_str)
 
       entry = {"id": tweet_url,
-               "title": "%s: " % uname + tweet.text,
+               "title": "%s: " % tweet.user.screen_name + tweet.text,
                "content_type": "html",
                "updated": rfc3339(tweet.created_at),
                "link": tweet_url}
