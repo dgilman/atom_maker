@@ -58,6 +58,7 @@ Primary argument (arg): twitter username
 Other arguments:
    oauth (optional): Boolean whether or not you want to authenticate with Twitter.  The default value is false.  You need to run get_twitter_tokens.py before you can do this._
    token_name (optional): The name of the token you want to use for OAuth.  The name is set in get_twitter_tokens.py.
+   mentions: Instead of a feed of a user's tweets get a feed of @replies at  a user.  Requires OAuth.
    qs:
       lang: human language of the feed's contents
 

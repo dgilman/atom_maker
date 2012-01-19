@@ -62,22 +62,13 @@ from util import noarg
 # (optional) lang: xml:lang attribute value for this entry.
 
 def twitter_context(arg):
-   """arg: twitter username
-   lang: optional xml:lang human language for content
-   Create a feed giving context to a user's replies."""
    import json
    import urllib
    from util import rfc3339
    import datetime
 
    import twitter
-
-   def format_tweet(username, realname, tweet, tweet_url, time):
-      return  """@%s / %s<br/>
-%s<br/>
-<a href="%s">%s</a><br/>
-<br/>
-""" % (username, realname, tweet, tweet_url, time.strftime("%A, %B %d, %Y %H:%M:%S"))
+   from twitter import format_tweet
 
    if "arg" in arg["qs"]:
       uname = arg["qs"]["arg"]
@@ -92,7 +83,10 @@ def twitter_context(arg):
 
    p = twitter.TwitterProxy(db=arg["cursor"], oauth=arg["oauth"], token_name=arg["token_name"])
 
-   tweets = p.user_timeline(uname)
+   if "mentions" in arg and arg["mentions"] == True:
+      tweets = p.mentions()
+   else:
+      tweets = p.user_timeline(uname)
 
    tweet_cache = {}
    for tweet in tweets:
@@ -184,8 +178,6 @@ def blogspot(arg):
    return rval
 
 def twitter_noreply(arg):
-   """Strips out @replies from a user's twitter feed.
-   username is case-sensitive!  It needs to be the same case as the user has on twitter.com"""
    # At some point https://dev.twitter.com/discussions/2690 will be fixed, making this function unnecessary
    from lxml import etree
    import sys
@@ -455,7 +447,6 @@ def _bz_screenscrape(arg): #, url, bz_version, lang=None):
    return rval
 
 def gelbooru(arg):
-   """Gets the latest posts for a given tag query.  Arg is the query"""
    from lxml import etree
 
    if "arg" not in arg["qs"]:
@@ -491,8 +482,6 @@ def gelbooru(arg):
    return rval
 
 def hackernews_comments(arg):
-   """Gets the comments of a hacker news user.  arg is a string (the username)"""
-
    if "arg" not in arg["qs"]:
       err(noarg)
    else:

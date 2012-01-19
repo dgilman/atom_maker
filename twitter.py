@@ -20,6 +20,13 @@ from util import rfc3339
 import datetime
 from tweepy.utils import parse_datetime
 
+def format_tweet(username, realname, tweet, tweet_url, time):
+   return  """@%s / %s<br/>
+%s<br/>
+<a href="%s">%s</a><br/>
+<br/>
+""" % (username, realname, tweet, tweet_url, time.strftime("%A, %B %d, %Y %H:%M:%S"))
+
 class Object(object): pass
 
 def populate_obj(d):
@@ -55,7 +62,6 @@ class TwitterProxy:
          if not self.api.test():
             err("Couldn't get the twitter tokens to work.")
 
-
    def user_timeline(self, username):
       if self.oauth:
          try:
@@ -90,3 +96,8 @@ class TwitterProxy:
          except:
             err(badfetch)
          return fake_object(result)
+
+   def mentions(self):
+      if not self.oauth:
+         err("user_mentions requires OAuth")
+      return self.api.mentions(count=40, include_rts=True)
