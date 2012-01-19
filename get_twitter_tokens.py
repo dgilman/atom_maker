@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import tweepy
 from tweepy.error import TweepError
 import sqlite3
