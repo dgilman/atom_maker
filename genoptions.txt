@@ -56,6 +56,8 @@ Default "gen" value: twitcontext
 Primary argument (arg): twitter username
 Other arguments:
    lang: human language of the feed's contents
+   oauth (optional): Boolean whether or not you want to authenticate with Twitter.  The default value is false.  You need to run get_twitter_tokens.py before you can do this._
+   token_name (optional): The name of the token you want to use for OAuth.  The name is set in get_twitter_tokens.py.
 
 Generator function name: 
 Purpose: 

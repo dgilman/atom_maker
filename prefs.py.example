@@ -6,12 +6,10 @@
 
 import generators
 
-def dgilman_twitter(arg):
-   """Example custom generator.  It passes a special primary argument (qs["arg"]) down to the function to shorten the query string for you.  You shouldn't need to write a function like this most of the time but the option is still available.
-
-Note that this is a contrived example: all of the configuration done here could be achieved with a query string of gen=twitcontext&arg=dgilman&lang=en"""
-   arg["qs"]["lang"] = "en"
-   arg["qs"]["arg"] = "dgilman"
+def twitter_use_oauth(arg):
+   """Example of a custom function.  By default the twitter_context generator doesn't use OAuth.  If you've configured OAuth using get_twitter_tokens.py you can use this function to make your twitter_context feeds use OAuth which features a higher API limit and the ability to see your friends' private feeds."""
+   arg["oauth"] = True
+   arg["token_name"] = "dgilman"
    return generators.twitter_context(arg)
 
 prefs = {
@@ -23,7 +21,7 @@ prefs = {
    "hn": generators.hackernews_comments,
    "webkit": generators.webkit,
    "twitcontext": generators.twitter_context,
-   "dgilman": dgilman_twitter
+   "twitcontextauth": twitter_use_oauth
 }
 
 # if your feeds complain about updating this value you need to look at the changelog to find out what to change

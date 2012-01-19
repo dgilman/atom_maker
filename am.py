@@ -96,7 +96,7 @@ def create_atom(feed):
       xml.append('<entry')
       if "lang" in entry:
          xml.append(' xml:lang="%s"' % entry["lang"])
-      xml.append('><id>%s</id><title>%s</title><content type="%s">%s</content><updated>%s</updated>' % (esc(entry["id"]), entry["title"], entry["content_type"],entry["content"], entry["updated"]))
+      xml.append('><id>%s</id><title>%s</title><content type="%s">%s</content><updated>%s</updated>' % (esc(entry["id"]), esc(entry["title"]), entry["content_type"],entry["content"], entry["updated"]))
 
       if "author" in entry:
          xml.append('<author><name>%s</name>' % entry["author"])

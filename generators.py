@@ -17,9 +17,9 @@
 # You should have received a copy of the GNU General Public License 19 # along with atom_maker.  If not, see <http://www.gnu.org/licenses/>.
 
 from util import create_error_feed as err
-badparse = "The page couldn't be parsed properly.  It's likely that the page's markup has changed and your atom_maker needs to be updated."
-badfetch = "The page couldn't be fetched.  The website might be down."
-noarg = "This generator has a mandatory primary argument (arg).  You need to include one in your query."
+from util import badparse
+from util import badfetch
+from util import noarg
 
 # Generator function spec:
 
@@ -70,36 +70,38 @@ def twitter_context(arg):
    from util import rfc3339
    import datetime
 
-   # Unfortunately this is locale dependent.  Fuck twitter's api.
-   ts = lambda x: rfc3339(datetime.datetime.strptime(x, '%a %b %d %H:%M:%S +0000 %Y'))
+   import twitter
 
    def format_tweet(username, realname, tweet, tweet_url, time):
       return  """@%s / %s<br/>
 %s<br/>
 <a href="%s">%s</a><br/>
 <br/>
-""" % (username, realname, tweet, tweet_url, time)
+""" % (username, realname, tweet, tweet_url, time.strftime("%A, %B %d, %Y %H:%M:%S"))
 
    if "arg" in arg["qs"]:
       uname = arg["qs"]["arg"]
    else:
       err(noarg)
 
-   try:
-      tweets = json.load(urllib.urlopen("http://api.twitter.com/1/statuses/user_timeline.json?screen_name=%s" % uname), encoding="UTF-8")
-   except:
-      err(badfetch)
-   if "error" in tweets:
-      err(tweets["error"])
+   if "oauth" not in arg:
+      arg["oauth"] = False
+
+   if "token_name" not in arg:
+      arg["token_name"] = None
+
+   p = twitter.TwitterProxy(db=arg["cursor"], oauth=arg["oauth"], token_name=arg["token_name"])
+
+   tweets = p.user_timeline(uname)
 
    tweet_cache = {}
    for tweet in tweets:
-      tweet_cache[tweet['id_str']] = tweet
+      tweet_cache[tweet.id] = tweet
 
    rval = {"id": "http://twitter.com/%s#atom_maker_context_feed" % uname,
            "link": "http://twitter.com/%s" % uname,
            "title": "Twitter / %s / context" % uname,
-           "author": tweets[0]["user"]["name"],
+           "author": tweets[0].user.name,
            "entries": []}
 
    if 'lang' in arg["qs"]:
@@ -107,41 +109,36 @@ def twitter_context(arg):
 
    parent_skip_list = set()
    for tweet in tweets:
-      if tweet['id'] in parent_skip_list:
+      if tweet.id in parent_skip_list:
          continue
 
       content = []
-      tweet_url = "http://twitter.com/%s/status/%s" % (uname, tweet["id_str"])
+      tweet_url = "http://twitter.com/%s/status/%s" % (uname, tweet.id_str)
 
       entry = {"id": tweet_url,
-               "title": "%s: " % uname + tweet["text"],
+               "title": "%s: " % uname + tweet.text,
                "content_type": "html",
-               "updated": ts(tweet["created_at"]),
+               "updated": rfc3339(tweet.created_at),
                "link": tweet_url}
-      content.append(format_tweet(tweet["user"]["screen_name"], tweet["user"]["name"], tweet["text"], tweet_url, tweet["created_at"]))
-      parent_id = tweet["in_reply_to_status_id_str"]
+      content.append(format_tweet(tweet.user.screen_name, tweet.user.name, tweet.text, tweet_url, tweet.created_at))
+      parent_id = tweet.in_reply_to_status_id
       while parent_id is not None:
          if parent_id in tweet_cache:
             parent_tweet = tweet_cache[parent_id]
          else:
-            try:
-               parent_tweet = json.load(urllib.urlopen("http://api.twitter.com/1/statuses/show/%s.json" % parent_id), encoding="UTF-8")
-               tweet_cache[parent_id] = parent_tweet
-            except:
-               err(badfetch)
-         # Hitting the API limits mid-feed just leaves you with a half-fleshed out feed
-         # This actually happened to me once
-         if 'error' in parent_tweet:
-            break
+            parent_tweet = p.get_tweet(parent_id)
+            if parent_tweet == None:
+               break
+            tweet_cache[parent_id] = parent_tweet
 
          # don't make a new RSS entry for tweets in a conversation chain
-         if parent_tweet['user']['id'] == tweet['user']['id']:
-            parent_skip_list.add(parent_tweet["id"])
+         if parent_tweet.user.id == tweet.user.id:
+            parent_skip_list.add(parent_tweet.id)
 
-         content.append(format_tweet(parent_tweet["user"]["screen_name"], parent_tweet["user"]["name"], parent_tweet["text"], "http://twitter.com/%s/status/%s" % (parent_tweet["user"]["screen_name"], parent_id), parent_tweet["created_at"]))
+         content.append(format_tweet(parent_tweet.user.screen_name, parent_tweet.user.name, parent_tweet.text, "http://twitter.com/%s/status/%s" % (parent_tweet.user.screen_name, parent_id), parent_tweet.created_at))
 
          # continue to next parent or terminate
-         parent_id = parent_tweet["in_reply_to_status_id_str"]
+         parent_id = parent_tweet.in_reply_to_status_id
       entry["content"] = "".join(reversed(content))
       rval["entries"].append(entry)
    rval["updated"] = rval["entries"][0]["updated"] # first tweet is newest

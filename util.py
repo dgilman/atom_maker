@@ -1,3 +1,7 @@
+badparse = "The page couldn't be parsed properly.  It's likely that the page's markup has changed and your atom_maker needs to be updated."
+badfetch = "The page couldn't be fetched.  The website might be down."
+noarg = "This generator has a mandatory primary argument (arg).  You need to include one in your query."
+
 def rfc3339(d): # https://bitbucket.org/henry/rfc3339/src/tip/rfc3339.py 
     return ('%04d-%02d-%02dT%02d:%02d:%02dZ' % (d.year, d.month, d.day, d.hour, d.minute, d.second))
 

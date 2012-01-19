@@ -5,7 +5,7 @@
 # 4. Increase SCHEMA_VERSION at the top of this file
 # 5. Submit a pull request!
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 def create_initial_format(c):
    """Schema ver 0 to 1
@@ -27,10 +27,17 @@ create index if not exists bugzilla_users_bz_email_index on bugzilla_users (bz, 
 pragma user_version = 2;
 END TRANSACTION;""")
 
+def create_twitter_tokens_table(c):
+   """Creates a table to store marshalled twitter tokens"""
+   c.executescript("""BEGIN TRANSACTION;
+create table if not exists twitter_tokens (name text unique not null, key text not null, secret text not null);
+END TRANSACTION;""")
+
 def check(c):
    #XXX there is a race condition here
    upgrade = {0: create_initial_format,
-              1: create_bugzilla_email_index}
+              1: create_bugzilla_email_index,
+              2: create_twitter_tokens_table}
    ver = c.execute("pragma user_version").fetchall()[0][0]
    while ver < SCHEMA_VERSION:
       upgrade[ver](c)
