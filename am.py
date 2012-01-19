@@ -121,7 +121,8 @@ def get_feed_generator(name):
    except ImportError:
       err("Your prefs.py file is missing.")
    except:
-      err("prefs.py couldn't be imported.")
+      import traceback
+      err("prefs.py couldn't be imported.\n%s" % traceback.format_exc())
    if prefs.version != VERSION:
       err("You need to migrate your prefs file to the latest version!  See the changelog for help.")
    try:
