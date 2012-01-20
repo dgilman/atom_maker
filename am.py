@@ -24,6 +24,7 @@ import cgi
 import datetime
 import sqlite3
 import cStringIO
+import codecs
 
 lxml = False
 try:
@@ -133,7 +134,7 @@ def create_atom(feed):
       tree.write(rval, encoding="UTF-8")
    else:
       tree.write(rval, encoding="UTF-8", xml_declaration=True)
-   return rval.getvalue().decode("UTF-8")
+   return rval.getvalue()
 
 def get_feed_generator(name):
    """Returns the generator function corresponding to a feed entry in the prefs file."""
@@ -196,10 +197,10 @@ def feed_cache(qs, flush=False):
    cache = c.execute("select ts, feed from cache where qs = ?", (args["cache_key"],)).fetchall()
    if len(cache) == 0 or (now - cache[0][0] > cache_length) or flush:
       rval = create_atom(get_feed(args))
-      c.execute("replace into cache values (?, ?, ?)", (args["cache_key"], now, rval))
+      c.execute("replace into cache values (?, ?, ?)", (args["cache_key"], now, buffer(codecs.getencoder("zlib")(rval)[0])))
       conn.commit()
    else:
-      rval = cache[0][1]
+      rval = codecs.getdecoder("zlib")(cache[0][1])[0]
    conn.close()
    return rval
 
@@ -218,7 +219,7 @@ def cli():
 
    args = cgi.parse()
 
-   feed = feed_cache(args, flush=True).encode('UTF-8')
+   feed = feed_cache(args, flush=True)
 
    if not lxml:
       print feed

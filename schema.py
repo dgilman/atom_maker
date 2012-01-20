@@ -5,7 +5,7 @@
 # 4. Increase SCHEMA_VERSION at the top of this file
 # 5. Submit a pull request!
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 def create_initial_format(c):
    """Schema ver 0 to 1
@@ -33,11 +33,19 @@ def create_twitter_tokens_table(c):
 create table if not exists twitter_tokens (name text unique not null, key text not null, secret text not null);
 END TRANSACTION;""")
 
+def cache_text_to_blob(c):
+   """Change the cache table to store cached feeds as blob"""
+   c.executescript("""BEGIN TRANSACTION;
+drop table if exists cache;
+create table if not exists cache (qs text primary key, ts timestamp, feed blob);
+END TRANSACTION;""")
+
 def check(c):
    #XXX there is a race condition here
    upgrade = {0: create_initial_format,
               1: create_bugzilla_email_index,
-              2: create_twitter_tokens_table}
+              2: create_twitter_tokens_table,
+              3: cache_text_to_blob}
    ver = c.execute("pragma user_version").fetchall()[0][0]
    while ver < SCHEMA_VERSION:
       upgrade[ver](c)
