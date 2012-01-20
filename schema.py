@@ -31,6 +31,7 @@ def create_twitter_tokens_table(c):
    """Creates a table to store marshalled twitter tokens"""
    c.executescript("""BEGIN TRANSACTION;
 create table if not exists twitter_tokens (name text unique not null, key text not null, secret text not null);
+pragma user_version = 3;
 END TRANSACTION;""")
 
 def cache_text_to_blob(c):
@@ -38,6 +39,7 @@ def cache_text_to_blob(c):
    c.executescript("""BEGIN TRANSACTION;
 drop table if exists cache;
 create table if not exists cache (qs text primary key, ts timestamp, feed blob);
+pragma user_version = 4;
 END TRANSACTION;""")
 
 def check(c):
