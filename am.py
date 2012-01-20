@@ -245,7 +245,7 @@ def page():
    print ""
    if "flush" in args:
       flush = True
-   print feed_cache(args, flush).encode('UTF-8')
+   print feed_cache(args, flush)
 
 if __name__ == "__main__":
    if 'REQUEST_METHOD' in os.environ and os.environ['REQUEST_METHOD'] == 'GET':
