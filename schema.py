@@ -48,7 +48,6 @@ def check(c):
               1: create_bugzilla_email_index,
               2: create_twitter_tokens_table,
               3: cache_text_to_blob}
-   ver = c.execute("pragma user_version").fetchall()[0][0]
-   while ver < SCHEMA_VERSION:
-      upgrade[ver](c)
-      ver += 1
+   ver = lambda: c.execute("pragma user_version").fetchall()[0][0]
+   while ver() < SCHEMA_VERSION:
+      upgrade[ver()](c)
