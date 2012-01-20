@@ -23,6 +23,14 @@ import os
 import cgi
 import datetime
 import sqlite3
+import cStringIO
+
+lxml = False
+try:
+   from lxml import etree
+   lxml = True
+except:
+   import xml.etree.cElementTree as etree
 
 VERSION = 4
 cache_length = datetime.timedelta(hours=6)
@@ -35,9 +43,17 @@ from util import rfc3339
 from util import self_url
 import schema
 
+def child_tag(root, tag, text=None, attrib=None):
+   if attrib:
+      new = etree.SubElement(root, tag, attrib=attrib)
+   else:
+      new = etree.SubElement(root, tag)
+   if text: new.text = text
+   return new
+
 def create_atom(feed):
    """Validates the generator output and creates the ATOM feed"""
-   xml = []
+   root = etree.Element("feed", attrib={"xmlns": "http://www.w3.org/2005/Atom"})
 
    esc = cgi.escape
 
@@ -54,21 +70,23 @@ def create_atom(feed):
    if not "entries" in feed:
       err("The feed lacks entries.")
 
-   xml.append('<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"')
    if 'lang' in feed:
-      xml.append(' xml:lang="%s"' % feed["lang"])
-   xml.append('><title>%s</title><id>%s</id><updated>%s</updated>' % (feed["title"], esc(feed["id"]), feed["updated"]))
+      root.set(etree.QName("{http://www.w3.org/XML/1998/namespace}lang"), feed["lang"])
+
+   child_tag(root, "title", text=feed["title"])
+   child_tag(root, "id", text=feed["id"])
+   child_tag(root, "updated", text=feed["updated"])
    if "author" in feed:
-      xml.append('<author><name>%s</name>' % feed["author"])
+      author = child_tag(root, "author")
+      child_tag(author, "name", text=feed["author"])
       if "author_uri" in feed:
-         xml.append('<uri>%s</uri>' % esc(feed["author_uri"]))
-      xml.append('</author>')
+         child_tag(author, "uri", feed["author_uri"])
    if "subtitle" in feed:
-      xml.append('<subtitle>%s</subtitle>' % feed["subtitle"])
+      child_tag(root, "subtitle", text=feed["subtitle"])
    if "link" in feed:
-      xml.append('<link href="%s" />' % esc(feed["link"]))
-   xml.append('<generator uri="https://github.com/dgilman/atom_maker" version="%s">atom_maker</generator>' % str(VERSION))
-   xml.append('<link rel="self" href="%s"/>' % self_url())
+      child_tag(root, "link", attrib={'href': feed["link"]})
+   child_tag(root, "generator", attrib={"uri": "https://github.com/dgilman/atom_maker", "version": str(VERSION)}, text="atom_maker")
+   child_tag(root, "link", attrib={"rel": "self", "href": self_url()})
 
    #validate individual entries.
 
@@ -86,31 +104,36 @@ def create_atom(feed):
       if not "content" in entry:
          err("An entry lacks content.")
       if not "content_type" in entry:
-         err("All entries need a content_type.  It must be text, html or xhtml depending on the content.")
+         err("All entries need a content_type.")
+      if entry["content_type"] not in ["html", "text", "xhtml"]:
+         err("content_type must be one of html, text, or html.")
       if not "updated" in entry:
          entry["updated"] = ts
 
-      if entry["content_type"] == "html":
-         entry["content"] = esc(entry["content"])
-
-      xml.append('<entry')
+      e = child_tag(root, "entry")
       if "lang" in entry:
-         xml.append(' xml:lang="%s"' % entry["lang"])
-      xml.append('><id>%s</id><title>%s</title><content type="%s">%s</content><updated>%s</updated>' % (esc(entry["id"]), esc(entry["title"]), entry["content_type"],entry["content"], entry["updated"]))
+         e.set(etree.QName("{http://www.w3.org/XML/1998/namespace}lang"), feed["lang"])
+      child_tag(e, "id", text=entry["id"])
+      child_tag(e, "title", text=entry["title"])
+      child_tag(e, "content", attrib={"type": entry["content_type"]}, text=entry["content"])
+      child_tag(e, "updated", text=entry["updated"])
 
       if "author" in entry:
-         xml.append('<author><name>%s</name>' % entry["author"])
+         author = child_tag(e, "author")
+         child_tag(author, "name", text=entry["author"])
          if "author_uri" in entry:
-            xml.append('<uri>%s</uri>' % esc(entry["author_uri"]))
-         xml.append('</author>')
+            child_tag(author, "uri", text=entry["author_uri"])
       if "published" in entry:
-         xml.append('<published>%s</published>' % entry["published"])
+         child_tag(e, "published", text=entry["published"])
       if "link" in entry:
-         xml.append('<link href="%s" />' % esc(entry["link"]))
-
-      xml.append('</entry>')
-   xml.append('</feed>')
-   return "".join(xml)
+         child_tag(e, "link", attrib={"href": entry["link"]})
+   rval = cStringIO.StringIO()
+   tree = etree.ElementTree(element=root)
+   if sys.version_info < (2, 7):
+      tree.write(rval, encoding="UTF-8")
+   else:
+      tree.write(rval, encoding="UTF-8", xml_declaration=True)
+   return rval.getvalue().decode("UTF-8")
 
 def get_feed_generator(name):
    """Returns the generator function corresponding to a feed entry in the prefs file."""
@@ -197,13 +220,7 @@ def cli():
 
    feed = feed_cache(args, flush=True).encode('UTF-8')
 
-   has_xml = True
-   try:
-      import lxml.etree as etree
-   except:
-      has_xml = False
-
-   if not has_xml:
+   if not lxml:
       print feed
    else:
       feed = etree.tostring(etree.fromstring(feed), pretty_print = True, encoding="UTF-8", xml_declaration=True)
