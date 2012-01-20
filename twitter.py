@@ -19,13 +19,21 @@ from util import badfetch
 from util import rfc3339
 import datetime
 from tweepy.utils import parse_datetime
+import re
+
+def htmlize(m):
+    return '<a href="%s">%s</a>' % (m.group(1), m.group(1))
+
+regex = re.compile("(https?://[^\s\n]+)")
+def link(s):
+   return re.sub(regex, htmlize, s)
 
 def format_tweet(username, realname, tweet, tweet_url, time):
    return  """@%s / %s<br/>
 %s<br/>
 <a href="%s">%s</a><br/>
 <br/>
-""" % (username, realname, tweet, tweet_url, time.strftime("%A, %B %d, %Y %H:%M:%S"))
+""" % (username, realname, link(tweet), tweet_url, time.strftime("%A, %B %d, %Y %H:%M:%S"))
 
 class Object(object): pass
 
