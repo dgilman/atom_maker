@@ -117,7 +117,7 @@ def twitter_context(arg):
                "link": tweet_url}
       content.append(format_tweet(tweet.user.screen_name, tweet.user.name, tweet.text, tweet_url, tweet.created_at))
       parent_id = tweet.in_reply_to_status_id
-      while parent_id is not None:
+      while parent_id:
          if parent_id in tweet_cache:
             parent_tweet = tweet_cache[parent_id]
          else:
