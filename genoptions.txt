@@ -17,6 +17,7 @@ Primary argument (arg): bug ID
 Other arguments:
    history: Show bug field change history inline.  Defaults to true.
    ccs: Show cc changes in the history.  Defaults to false.
+   warn_old: If a bug hasn't been updated in over a year a warning entry is added to the feed.  Defaults to true.
 
 Generator function name: bmo
 Purpose: Bugzilla bug updates from bugzilla.mozilla.org
@@ -25,6 +26,7 @@ Primary argument (arg): bug ID
 Other arguments:
    history: Show bug field change history inline.  Defaults to true.
    ccs: Show cc changes in the history.  Defaults to false.
+   warn_old: If a bug hasn't been updated in over a year a warning entry is added to the feed.  Defaults to true.
 
 Generator function name: webkit
 Purpose: Bugzilla bug updates from bugs.webkit.org
@@ -32,8 +34,7 @@ Dependencies: lxml
 Default "gen" value: webkit
 Primary argument (arg): bug ID
 Other arguments:
-   history: Show bug field change history inline.  Defaults to true.
-   ccs: Show cc changes in the history.  Defaults to false.
+   warn_old: If a bug hasn't been updated in over a year a warning entry is added to the feed.  Defaults to true.
 
 Generator function name: twitter_noreply
 Purpose: Strips out @replies from a Twitter user timeline

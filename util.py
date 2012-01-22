@@ -19,3 +19,17 @@ def self_url():
    import os
    from cgi import escape
    return "http://%s%s" % (os.environ['SERVER_NAME'], escape(os.environ['REQUEST_URI']))
+
+def warn_old(guid, id):
+   import datetime
+   now = rfc3339(datetime.datetime.utcnow())
+   guid = guid + "#oldwarning_%d" % now.year # on january 1 feed readers will present a "new" reminder
+   return {"id": guid,
+            "title": "Bug %s is old" % id,
+            "content": "Bug %s hasn't been changed in over a year.  It might be time to give up hope." % id,
+            "content_type": "text",
+            "author": "The Great Gig In The Sky",
+            "updated": now,
+            "published": now,
+            "link": guid}
+

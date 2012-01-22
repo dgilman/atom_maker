@@ -240,6 +240,7 @@ def _bz_xmlrpc(arg):
    import datetime
    now = datetime.datetime.utcnow()
    from util import rfc3339
+   from util import warn_old
 
    if "arg" not in arg["qs"]:
       err(noarg)
@@ -264,6 +265,9 @@ def _bz_xmlrpc(arg):
          ccs = False
       else:
          ccs = True
+
+   if "warn_old" not in arg:
+      arg["warn_old"] = True
 
    url = arg["url"]
    bugid = arg["qs"]["arg"]
@@ -372,15 +376,20 @@ create temp table email_queries (email text unique);""")
    for entry in rval["entries"]:
       entry["published"] = rfc3339(entry["published"])
 
+   if arg["warn_old"] and bugdata['last_change_time'] < (now - datetime.timedelta(days=365)):
+      rval["entries"].append(warn_old(guid, bugid))
+
    return rval
 
-def _bz_screenscrape(arg): #, url, bz_version, lang=None):
+def _bz_screenscrape(arg):
    """arg: bug id as string
    url: path to bugzilla installation without slash
    bz_version: integer 3 or 4 corresponding to the installation version"""
    #TODO: not assume everyone's in PST
    from lxml import etree
    import urllib #bugzilla.mozilla.org forces https which libxml2 balks at
+   import datetime
+   from util import warn_old
 
    if "arg" not in arg["qs"]:
       err(noarg)
@@ -389,6 +398,14 @@ def _bz_screenscrape(arg): #, url, bz_version, lang=None):
       int(arg["qs"]["arg"])
    except:
       err("Bug IDs must be numerical.")
+
+   if 'warn_old' not in arg:
+      arg["warn_old"] = True
+
+   #>implying there are good programmers outside of PST
+   def pseudo_rfc3339(s):
+      bits = s.split()
+      return bits[0] + "T" + bits[1] + "-07:00"
 
    base_url = arg["url"]
    bugid = arg["qs"]["arg"]
@@ -416,8 +433,7 @@ def _bz_screenscrape(arg): #, url, bz_version, lang=None):
       if arg["version"] == 4:
          link = url + "#" + comment.attrib['id']
          time = comment.xpath("div/span[@class='bz_comment_time']")[0].text.strip("\n ")
-         timebits = time.split()
-         pseudo = timebits[0] + "T" + timebits[1] + "-07:00" #pseudo rfc3339
+         pseudo = pseudo_rfc3339(time)
          fn = comment.xpath("div/span/span/span[@class='fn']")
          if len(fn) == 1:
             name = fn[0].text
@@ -429,8 +445,7 @@ def _bz_screenscrape(arg): #, url, bz_version, lang=None):
       if arg["version"] == 3:
          link = base_url + "/" + comment.xpath("span/i/a")[0].attrib['href']
          time = comment.xpath("span/i/span")[0].tail.strip("\n ")
-         timebits = time.split()
-         pseudo = timebits[0] + "T" + timebits[1] + "-07:00"
+         pseudo = pseudo_rfc3339(time)
          name = comment.xpath("span/i/span/a")[0].text # everyone always has a name
          title = "Comment %s - %s - %s" % (comment.xpath("span/i/a")[0].attrib["name"][1:], name, time)
          content = etree.tostring(comment.xpath("pre")[0])
@@ -445,6 +460,8 @@ def _bz_screenscrape(arg): #, url, bz_version, lang=None):
                "link": link}
       rval["entries"].append(entry)
       rval["updated"] = pseudo #the last updated time of the global feed is the post time of the last comment... for now
+   if arg["warn_old"] and datetime.datetime.strptime(rval["updated"][:-6], "%Y-%m-%dT%H:%M:%S") < (datetime.datetime.utcnow() - datetime.timedelta(days=365)):
+      rval["entries"].append(warn_old(url, bugid))
    return rval
 
 def gelbooru(arg):
