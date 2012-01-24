@@ -29,11 +29,11 @@ def link(s):
    return re.sub(regex, htmlize, s)
 
 def format_tweet(username, realname, tweet, tweet_url, time):
-   return  """@%s / %s<br/>
-%s<br/>
-<a href="%s">%s</a><br/>
+   return  """@%(username)s / %(realname)s<br/>
+%(tweet)s<br/>
+<a href="%(tweet_url)s">%(time)s</a><br/>
 <br/>
-""" % (username, realname, link(tweet), tweet_url, time.strftime("%A, %B %d, %Y %H:%M:%S"))
+""" % {"username": username, "realname": realname, "tweet": link(tweet), "tweet_url": tweet_url, "time": time.strftime("%A, %B %d, %Y %H:%M:%S")}
 
 class Object(object): pass
 
