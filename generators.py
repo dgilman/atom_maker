@@ -340,6 +340,13 @@ create temp table email_queries (email text unique);""")
              content.append("Field <b>%s</b>:\n" % field_change['field_name'])
              if field_change['field_name'] == 'attachments.isobsolete':
                 content.append('<a href="%s/attachment.cgi?id=%d">Attachment #%d</a> is obsolete\n' % (url, field_change['attachment_id'], field_change['attachment_id']))
+             if field_change['field_name'] == 'dependson':
+                import re
+                sub = lambda f: re.sub("(\d+)", lambda m: '<a href="%s/show_bug.cgi?id=%s">%s</a>' % (url, m.group(1), "Bug " + m.group(1)), f)
+                if 'added' in field_change:
+                   field_change['added'] = sub(field_change['added'])
+                if 'removed' in field_change:
+                   field_change['removed'] = sub(field_change['removed'])
              content.append("Removed:\n")
              content.append("     %s\n" % field_change['removed'])
              content.append("Added:\n")
