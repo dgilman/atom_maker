@@ -167,14 +167,12 @@ def parse_qs(qs):
    if 'feed' in qs: # old-style
       qs["feed"] = qs["feed"][0].decode("UTF-8")
       rval["cache_key"] = qs["feed"]
-      feed_bits = qs['feed'].partition("_")
-      rval["qs"]["gen"] = feed_bits[0]
-      rval["qs"]["arg"] = feed_bits[2]
+      rval["qs"]["gen"], underscore, rval["qs"]["arg"] = qs['feed'].partition("_")
    elif "gen" in qs:
       for k,v in qs.iteritems():
          qs[k] = v[0].decode("UTF-8")
       rval["qs"] = qs
-      additional_args = filter(lambda x: x != "gen" and x != "arg", qs.keys())
+      additional_args = [x for x in qs.keys() if x != "gen" and x != "arg"]
       if "arg" in qs:
          rval["cache_key"] = qs["gen"] + "_" + qs["arg"]
       else:
