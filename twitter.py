@@ -74,21 +74,18 @@ class TwitterProxy:
    def user_timeline(self, username):
       if self.oauth:
          try:
-            return self.api.user_timeline(include_rts=True, screen_name=username)
+            return self.api.user_timeline(include_rts=True, count=40, screen_name=username)
          except:
             err("You can't see that user's timeline.")
       else:
          import json
          import urllib
-         rval = []
          try:
-            tweets = json.load(urllib.urlopen("https://api.twitter.com/1/statuses/user_timeline.json?screen_name=%s&include_rts=true" % username), encoding="UTF-8")
+            tweets = json.load(urllib.urlopen("https://api.twitter.com/1/statuses/user_timeline.json?count=40&screen_name=%s&include_rts=true" % username), encoding="UTF-8")
          except:
             err("You can't see that user's timeline.  The Twitter API might also be down.")
-         # there is no need to check for "error" as urllib will throw an exception in that case and we won't get this far
-         for tweet in tweets:
-            rval.append(fake_object(tweet))
-         return rval
+         # there is no need to check for the "error" key as urllib will throw an exception in that case and we won't get this far
+         return [fake_object(t) for t in tweet]
 
    def get_tweet(self, tid):
       """CHECK THE RETURN VALUE!  Returns None if the tweet can't be read."""

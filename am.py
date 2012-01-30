@@ -164,13 +164,13 @@ def parse_qs(qs):
    if "flush" in qs:
       del(qs["flush"])
    rval = {"qs": {}}
+   for k,v in qs.iteritems():
+      qs[k] = v[0].decode("UTF-8")
    if 'feed' in qs: # old-style
-      qs["feed"] = qs["feed"][0].decode("UTF-8")
       rval["cache_key"] = qs["feed"]
-      rval["qs"]["gen"], underscore, rval["qs"]["arg"] = qs['feed'].partition("_")
+      rval["qs"].update(((k,v) for k,v in qs.iteritems() if k != 'feed')) # slurp up other args
+      rval["qs"]["gen"], underscore, rval["qs"]["arg"] = qs['feed'].partition("_") # overwrites a gen and arg if they were given
    elif "gen" in qs:
-      for k,v in qs.iteritems():
-         qs[k] = v[0].decode("UTF-8")
       rval["qs"] = qs
       additional_args = [x for x in qs.keys() if x != "gen" and x != "arg"]
       if "arg" in qs:
@@ -179,7 +179,7 @@ def parse_qs(qs):
          rval["cache_key"] = qs["gen"]
       if len(additional_args) != 0:
          rval["cache_key"] += "_"
-         rval["cache_key"] += "_".join([x + "_" + qs[x] for x in additional_args])
+         rval["cache_key"] += "_".join((x + "_" + qs[x] for x in additional_args))
    else:
       err("Your query string is incomplete.")
    return rval

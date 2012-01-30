@@ -18,7 +18,7 @@ def create_error_feed(error_msg):
 def self_url():
    import os
    from cgi import escape
-   return "http://%s%s" % (os.environ['SERVER_NAME'], escape(os.environ['REQUEST_URI']))
+   return "http://%s%s" % (os.environ['SERVER_NAME'].decode("UTF-8"), escape(os.environ['REQUEST_URI'].decode("UTF-8")))
 
 def warn_old(guid, id):
    import datetime
