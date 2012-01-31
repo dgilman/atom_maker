@@ -30,14 +30,15 @@ def warn_old(guid, id):
    """guid: path to bug (foo.com/show_bug.cgi)
       id: bug id"""
    import datetime
-   now = rfc3339(datetime.datetime.utcnow())
+   now = datetime.datetime.utcnow()
+   ts = rfc3339(now)
    guid = guid + "#oldwarning_%d" % now.year # on january 1 feed readers will present a "new" reminder
    return {"id": guid,
             "title": "Bug %s is old" % id,
             "content": "Bug %s hasn't been changed in over a year.  It might be time to give up hope." % id,
             "content_type": "text",
             "author": "The Great Gig In The Sky",
-            "updated": now,
-            "published": now,
+            "updated": ts,
+            "published": ts,
             "link": guid}
 
