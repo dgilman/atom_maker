@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # vim: ts=3 et sw=3 sts=3:
 
 # Copyright 2011 David Gilman
