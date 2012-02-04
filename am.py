@@ -187,6 +187,7 @@ def parse_qs(qs):
 def feed_cache(qs, flush=False):
    conn = sqlite3.connect("cache.sqlite3", detect_types=sqlite3.PARSE_DECLTYPES)
    c = conn.cursor()
+   c.execute("pragma foreign_keys = 1")
    schema.check(c)
 
    args = parse_qs(qs)
