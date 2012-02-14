@@ -238,6 +238,7 @@ def _bz_xmlrpc(arg):
    import xmlrpclib
    import sqlite3
    import datetime
+   import re
    now = datetime.datetime.utcnow()
    from util import rfc3339
    from util import warn_old
@@ -340,8 +341,7 @@ create temp table email_queries (email text unique);""")
              content.append("Field <b>%s</b>:\n" % field_change['field_name'])
              if field_change['field_name'] == 'attachments.isobsolete':
                 content.append('<a href="%s/attachment.cgi?id=%d">Attachment #%d</a> is obsolete\n' % (url, field_change['attachment_id'], field_change['attachment_id']))
-             if field_change['field_name'] == 'dependson':
-                import re
+             if field_change['field_name'] in ['dependson', 'blocked']:
                 sub = lambda f: re.sub("(\d+)", lambda m: '<a href="%s/show_bug.cgi?id=%s">%s</a>' % (url, m.group(1), "Bug " + m.group(1)), f)
                 if 'added' in field_change:
                    field_change['added'] = sub(field_change['added'])
@@ -365,13 +365,14 @@ create temp table email_queries (email text unique);""")
                    "content_type": "html"}
           rval["entries"].append(entry)
 
+   linkbugs = lambda x:  re.sub("([Bb])ug (\d+)", lambda m: '<a href="%s/show_bug.cgi?id=%s">%s</a>' % (url, m.group(2), m.group(1) + "ug " + m.group(2)), x)
    for comment_no, comment in enumerate(bugcomments):
       comment_id = guid + "#c" + str(comment_no)
       real_name = rn(comment['author'])
       comment_time_str = rfc3339(comment['time'])
       entry = {"id": comment_id,
                "title": u"Comment %s - %s - %s" % (str(comment_no), real_name, comment_time_str),
-               "content": '<pre style="white-space:pre-wrap">' + comment['text'] + "</pre>",
+               "content": '<pre style="white-space:pre-wrap">' + linkbugs(comment['text']) + "</pre>",
                "content_type": "html",
                "author": real_name,
                "updated": comment_time_str,
