@@ -365,7 +365,7 @@ create temp table email_queries (email text unique);""")
                    "content_type": "html"}
           rval["entries"].append(entry)
 
-   linkbugs = lambda x:  re.sub("([Bb])ug (\d+)", lambda m: '<a href="%s/show_bug.cgi?id=%s">%s</a>' % (url, m.group(2), m.group(1) + "ug " + m.group(2)), x)
+   linkbugs = lambda x: re.sub("([Bb])ug (\d+)", lambda m: '<a href="%s/show_bug.cgi?id=%s">%s</a>' % (url, m.group(2), m.group(1) + "ug " + m.group(2)), x)
    for comment_no, comment in enumerate(bugcomments):
       comment_id = guid + "#c" + str(comment_no)
       real_name = rn(comment['author'])
