@@ -12,14 +12,28 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License 19 # along with atom_maker.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with atom_maker.  If not, see <http://www.gnu.org/licenses/>.
 
 from util import create_error_feed as err
 from util import badfetch
 from util import rfc3339
 import datetime
 from tweepy.utils import parse_datetime
+from tweepy.error import TweepError
 import re
+
+# catch twitter's frequent 503s and spin endlessly on them
+def retry(func, args):
+   while True:
+      try:
+         rval = func(**args)
+      except TweepError as e:
+         if e.response.status == 503:
+            continue
+         else:
+            raise e
+      return rval
 
 def htmlize(m):
     return '<a href="%s">%s</a>' % (m.group(1), m.group(1))
@@ -74,9 +88,9 @@ class TwitterProxy:
    def user_timeline(self, username):
       if self.oauth:
          try:
-            return self.api.user_timeline(include_rts=True, count=40, screen_name=username)
-         except:
-            err("You can't see that user's timeline.")
+            return retry(self.api.user_timeline, {"include_rts": True, "count": 40, "screen_name": username})
+         except Exception as e:
+            err("Twitter: %s" % e.reason)
       else:
          import json
          import urllib
@@ -91,7 +105,7 @@ class TwitterProxy:
       """CHECK THE RETURN VALUE!  Returns None if the tweet can't be read."""
       if self.oauth:
          try:
-            return self.api.get_status(id=tid)
+            return retry(self.api.get_status, {"id": tid})
          except:
             return None
       else:
@@ -106,9 +120,9 @@ class TwitterProxy:
    def mentions(self):
       if not self.oauth:
          err("user_mentions requires OAuth")
-      return self.api.mentions(count=40, include_rts=True)
+      return retry(self.api.mentions, {"count": 40, "include_rts": True})
 
    def me(self):
       if not self.oauth:
          err("This function is only implemented for OAuth at the moment.  If you want it for non-authenticated queries open a bug.")
-      return self.api.me()
+      return retry(self.api.me, {})
