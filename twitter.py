@@ -66,12 +66,12 @@ class Twitter:
       return self._retry(self.api.get_status, {"id": tid})
 
    def mentions(self):
-      if not self.oauth:
+      if not self.api.auth:
          err("user_mentions requires OAuth")
       return self._retry(self.api.mentions, {"count": 40, "include_rts": True})
 
    def me(self):
-      if not self.oauth:
+      if not self.api.auth:
          err("You tried to get the profile of the authenticated user when unauthenticated.")
       return self._retry(self.api.me, {})
 
