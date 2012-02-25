@@ -19,21 +19,9 @@ from util import create_error_feed as err
 from util import badfetch
 from util import rfc3339
 import datetime
-from tweepy.utils import parse_datetime
 from tweepy.error import TweepError
 import re
 
-# catch twitter's frequent 503s and spin endlessly on them
-def retry(func, args):
-   while True:
-      try:
-         rval = func(**args)
-      except TweepError as e:
-         if e.response.status == 503:
-            continue
-         else:
-            raise e
-      return rval
 
 def htmlize(m):
     return '<a href="%s">%s</a>' % (m.group(1), m.group(1))
@@ -49,80 +37,52 @@ def format_tweet(username, realname, tweet, tweet_url, time):
 <br/>
 """ % {"username": username, "realname": realname, "tweet": link(tweet), "tweet_url": tweet_url, "time": time.strftime("%A, %B %d, %Y %H:%M:%S")}
 
-class Object(object): pass
-
-def populate_obj(d):
-   o = Object()
-   for k,v in d.iteritems():
-      if k == "created_at": v = parse_datetime(v)
-      if isinstance(v, dict):
-         setattr(o, k, populate_obj(v))
-      else:
-         setattr(o, k, v)
-   return o
-
-def fake_object(tweet): # The car's on fire and there's no driver at the wheel
-   if "error" in tweet:
-      return None
-   return populate_obj(tweet)
-
-class TwitterProxy:
-   def __init__(self, db=None, oauth=False, token_name=None):
-      self.oauth = oauth
-      if not self.oauth:
-         return
-      if db == None:
-         err("OAuth needs the DB cursor")
+class Twitter:
+   def __init__(self, db=None, oauth=False, token_name=None, infinite_retries=True):
       import tweepy
-      try:
-         self.token = db.execute("select key, secret from twitter_tokens where name = ?", (token_name,)).fetchall()[0]
-      except:
-         err("Your twitter tokens are nowhere to be found.  Try running get_twitter_tokens.py")
-      # unbreakable encryption
-      self.handler = tweepy.auth.OAuthHandler('Ab0dCwvGliqZDE167mg9Xu'[::-1], '4ATKOElWbkwxfuVIsI8LwJWXu2MuzDZqv2VK8eE1'[::-1], secure=True)
-      self.handler.set_access_token(self.token[0], self.token[1])
-      self.api = tweepy.API(self.handler)
-      if not self.api.test():
-         err("Couldn't get the twitter tokens to work.")
+
+      handler = None
+
+      if oauth:
+         if db == None:
+            err("OAuth needs the DB cursor")
+         try:
+            token = db.execute("select key, secret from twitter_tokens where name = ?", (token_name,)).fetchall()[0]
+         except:
+            err("Your twitter tokens are nowhere to be found.  Try running get_twitter_tokens.py")
+         handler = tweepy.auth.OAuthHandler('uX9gm761EDZqilGvwCd0bA', '1Ee8KV2vqZDzuM2uXWJwL8IsIVufxwkbWlEOKTA4', secure=True)
+         handler.set_access_token(token[0], token[1])
+      self.api = tweepy.API(handler)
+      if not self._retry(self.api.test, {}):
+         err("Sanity check failed.  Your OAuth tokens might be bad.")
 
    def user_timeline(self, username):
-      if self.oauth:
-         try:
-            return retry(self.api.user_timeline, {"include_rts": True, "count": 40, "screen_name": username})
-         except Exception as e:
-            err("Twitter: %s" % e.reason)
-      else:
-         import json
-         import urllib
-         try:
-            tweets = json.load(urllib.urlopen("https://api.twitter.com/1/statuses/user_timeline.json?count=40&screen_name=%s&include_rts=true" % username), encoding="UTF-8")
-         except:
-            err("You can't see that user's timeline.  The Twitter API might also be down.")
-         # there is no need to check for the "error" key as urllib will throw an exception in that case and we won't get this far
-         return [fake_object(t) for t in tweet]
+      try:
+         return self._retry(self.api.user_timeline, {"include_rts": True, "count": 40, "screen_name": username})
+      except Exception as e:
+         err("Twitter: %s" % e.reason)
 
    def get_tweet(self, tid):
-      """CHECK THE RETURN VALUE!  Returns None if the tweet can't be read."""
-      if self.oauth:
-         try:
-            return retry(self.api.get_status, {"id": tid})
-         except:
-            return None
-      else:
-         import json
-         import urllib
-         try:
-            result = json.load(urllib.urlopen("https://api.twitter.com/1/statuses/show/%s.json" % tid), encoding="UTF-8")
-         except:
-            err(badfetch)
-         return fake_object(result)
+      return self._retry(self.api.get_status, {"id": tid})
 
    def mentions(self):
       if not self.oauth:
          err("user_mentions requires OAuth")
-      return retry(self.api.mentions, {"count": 40, "include_rts": True})
+      return self._retry(self.api.mentions, {"count": 40, "include_rts": True})
 
    def me(self):
       if not self.oauth:
-         err("This function is only implemented for OAuth at the moment.  If you want it for non-authenticated queries open a bug.")
-      return retry(self.api.me, {})
+         err("You tried to get the profile of the authenticated user when unauthenticated.")
+      return self._retry(self.api.me, {})
+
+   # catch twitter's frequent 503s and spin endlessly on them
+   def _retry(self, func, args):
+      while True:
+         try:
+            rval = func(**args)
+         except TweepError as e:
+            if e.response.status == 503 and self.infinite_retries:
+               continue
+            else:
+               raise e
+         return rval

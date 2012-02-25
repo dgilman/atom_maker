@@ -81,7 +81,10 @@ def twitter_context(arg):
    if "token_name" not in arg:
       arg["token_name"] = None
 
-   p = twitter.TwitterProxy(db=arg["cursor"], oauth=arg["oauth"], token_name=arg["token_name"])
+   if "infinite_retries" not in arg:
+      arg["infinite_retries"] = True
+
+   p = twitter.Twitter(db=arg["cursor"], oauth=arg["oauth"], token_name=arg["token_name"], infinite_retries=arg["infinite_retries"])
 
    if "mentions" in arg and arg["mentions"] == True:
       tweets = p.mentions()
@@ -122,8 +125,9 @@ def twitter_context(arg):
          if parent_id in tweet_cache:
             parent_tweet = tweet_cache[parent_id]
          else:
-            parent_tweet = p.get_tweet(parent_id)
-            if parent_tweet == None:
+            try:
+               parent_tweet = p.get_tweet(parent_id)
+            except:
                break
             tweet_cache[parent_id] = parent_tweet
 
