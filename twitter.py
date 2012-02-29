@@ -59,7 +59,7 @@ class Twitter:
    def user_timeline(self, username):
       try:
          return self._retry(self.api.user_timeline, {"include_rts": True, "count": 40, "screen_name": username})
-      except Exception as e:
+      except TweepError as e:
          err("Twitter: %s" % e.reason)
 
    def get_tweet(self, tid):
