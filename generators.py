@@ -71,21 +71,13 @@ def twitter_context(arg):
    import twitter
    from twitter import format_tweet
 
-
-   if "oauth" not in arg:
-      arg["oauth"] = False
-
    if "arg" not in arg["qs"] and arg["oauth"] == False:
       err(noarg)
 
-   if "token_name" not in arg:
-      arg["token_name"] = None
-
-   if "infinite_retries" not in arg:
-      arg["infinite_retries"] = True
-
-   if "source_filter" not in arg:
-      arg["source_filter"] = False
+   _default(arg, "oauth", False)
+   _default(arg, "token_name", None)
+   _default(arg, "infinite_retries", True)
+   _default(arg, "source_filter", False)
 
    p = twitter.Twitter(db=arg["cursor"], oauth=arg["oauth"], token_name=arg["token_name"], infinite_retries=arg["infinite_retries"])
 
@@ -277,8 +269,7 @@ def _bz_xmlrpc(arg):
       else:
          ccs = True
 
-   if "warn_old" not in arg:
-      arg["warn_old"] = True
+   _default(arg, 'warn_old', True)
 
    url = arg["url"]
    bugid = arg["qs"]["arg"]
@@ -417,8 +408,7 @@ def _bz_screenscrape(arg):
    except:
       err("Bug IDs must be numerical.")
 
-   if 'warn_old' not in arg:
-      arg["warn_old"] = True
+   _default(arg, 'warn_old', True)
 
    #>implying there are good programmers outside of PST
    def pseudo_rfc3339(s):
@@ -554,3 +544,7 @@ def hackernews_comments(arg):
                "content_type": "html"}
       rval["entries"].append(entry)
    return rval
+
+def _default(arg, k, v):
+   if k not in arg:
+      arg[k] = v
