@@ -4,7 +4,7 @@ from tweepy.error import TweepError
 
 import schema
 
-c = schema.init()
+conn, c = schema.init()
 
 print "Browse to this URL to authenticate with twitter."
 handler = tweepy.auth.OAuthHandler('uX9gm761EDZqilGvwCd0bA', '1Ee8KV2vqZDzuM2uXWJwL8IsIVufxwkbWlEOKTA4', secure=True)

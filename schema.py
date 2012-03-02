@@ -58,5 +58,5 @@ def init():
    c = conn.cursor()
    c.execute("pragma foreign_keys = 1")
    check(c)
-   return c
+   return conn, c
 

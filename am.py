@@ -184,7 +184,7 @@ def parse_qs(qs):
    return rval
 
 def feed_cache(qs, flush=False):
-   c = schema.init()
+   conn, c = schema.init()
 
    args = parse_qs(qs)
    args["cursor"] = c
