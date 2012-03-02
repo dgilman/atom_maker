@@ -22,7 +22,6 @@ import sys
 import os
 import cgi
 import datetime
-import sqlite3
 import cStringIO
 import codecs
 
@@ -185,10 +184,7 @@ def parse_qs(qs):
    return rval
 
 def feed_cache(qs, flush=False):
-   conn = sqlite3.connect("cache.sqlite3", detect_types=sqlite3.PARSE_DECLTYPES)
-   c = conn.cursor()
-   c.execute("pragma foreign_keys = 1")
-   schema.check(c)
+   c = schema.init()
 
    args = parse_qs(qs)
    args["cursor"] = c

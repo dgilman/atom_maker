@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 import tweepy
 from tweepy.error import TweepError
-import sqlite3
 
 import schema
 
-conn = sqlite3.connect("cache.sqlite3", detect_types=sqlite3.PARSE_DECLTYPES)
-c = conn.cursor()
-schema.check(c)
+c = schema.init()
 
 print "Browse to this URL to authenticate with twitter."
 handler = tweepy.auth.OAuthHandler('uX9gm761EDZqilGvwCd0bA', '1Ee8KV2vqZDzuM2uXWJwL8IsIVufxwkbWlEOKTA4', secure=True)

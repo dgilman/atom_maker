@@ -51,3 +51,12 @@ def check(c):
    ver = lambda: c.execute("pragma user_version").fetchall()[0][0]
    while ver() < SCHEMA_VERSION:
       upgrade[ver()](c)
+
+def init():
+   import sqlite3
+   conn = sqlite3.connect("cache.sqlite3", detect_types=sqlite3.PARSE_DECLTYPES)
+   c = conn.cursor()
+   c.execute("pragma foreign_keys = 1")
+   check(c)
+   return c
+
