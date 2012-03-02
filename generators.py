@@ -84,6 +84,9 @@ def twitter_context(arg):
    if "infinite_retries" not in arg:
       arg["infinite_retries"] = True
 
+   if "filter_foursquare" not in arg:
+      arg["filter_foursquare"] = False
+
    p = twitter.Twitter(db=arg["cursor"], oauth=arg["oauth"], token_name=arg["token_name"], infinite_retries=arg["infinite_retries"])
 
    if "mentions" in arg and arg["mentions"] == True:
@@ -109,6 +112,8 @@ def twitter_context(arg):
    parent_skip_list = set()
    for tweet in tweets:
       if tweet.id in parent_skip_list:
+         continue
+      if arg["filter_foursquare"] and tweet.source == "foursquare":
          continue
 
       content = []
