@@ -42,6 +42,7 @@ class Twitter:
       import tweepy
 
       handler = None
+      self.infinite_retries = infinite_retries
 
       if oauth:
          if db == None:
