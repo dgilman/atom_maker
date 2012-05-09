@@ -82,7 +82,7 @@ class Twitter:
          try:
             rval = func(**args)
          except TweepError as e:
-            if e.response.status == 503 and self.infinite_retries:
+            if e.response and e.response.status == 503 and self.infinite_retries:
                continue
             else:
                raise e
