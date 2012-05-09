@@ -526,7 +526,7 @@ def hackernews_comments(arg):
    post = lambda e: etree.tostring(list(e.xpath('span[1]')[0])[0], encoding='UTF-8') #get rid of <span class="comment">
 
    try:
-      tree = etree.parse('http://news.ycombinator.com/threads?id=%s' % username, etree.HTMLParser(encoding="UTF-8"))
+      tree = etree.parse(userpage, etree.HTMLParser(encoding="UTF-8"))
    except:
       err(badfetch)
    user_comments = tree.xpath('/html/body/center/table/tr/td/table/tr/td[div/span/a = "%s"]' % username)
